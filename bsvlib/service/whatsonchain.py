@@ -31,9 +31,6 @@ class WhatsOnChain:
         return 0
 
     def broadcast(self, raw: str) -> Optional[str]:
-        """
-        returns txid if broadcast successfully otherwise None
-        """
         with suppress(Exception):
             data = json.dumps({'txHex': raw})
             r = requests.post(f'{self.url}/{self.chain}/tx/raw', headers=self.headers, data=data, timeout=self.timeout)

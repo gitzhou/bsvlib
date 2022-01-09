@@ -6,7 +6,7 @@ from ..utils import unsigned_to_varint, address_to_public_key_hash
 
 def get_pushdata_code(byte_length: int) -> bytes:
     """
-    returns the corresponding PUSHDATA opcode according to the byte length of pushdata
+    :returns: the corresponding PUSHDATA opcode according to the byte length of pushdata
     """
     if byte_length <= 0x4b:
         return byte_length.to_bytes(1, 'little')
@@ -23,7 +23,7 @@ def get_pushdata_code(byte_length: int) -> bytes:
 
 def assemble_pushdata(pushdata: bytes) -> bytes:
     """
-    returns OP_PUSHDATA + pushdata
+    :returns: OP_PUSHDATA + pushdata
     """
     return get_pushdata_code(len(pushdata)) + pushdata
 
@@ -69,7 +69,7 @@ class Script:
     @staticmethod
     def p2pkh_locking(value: Union[str, bytes]) -> 'Script':
         """
-        returns P2PKH locking script from address (str) or public key hash160 (bytes)
+        :returns: P2PKH locking script from address (str) or public key hash160 (bytes)
         """
         if isinstance(value, str):
             pkh: bytes = address_to_public_key_hash(value)
@@ -83,7 +83,7 @@ class Script:
     @staticmethod
     def p2pkh_unlocking(signature: bytes, public_key: bytes, sighash: SigHash) -> 'Script':
         """
-        returns P2PKH unlocking script
+        :returns: P2PKH unlocking script
         """
         assert len(public_key) in PUBLIC_KEY_VALID_BYTE_LENGTH, f'invalid byte length of public key'
         return Script(assemble_pushdata(signature + sighash.to_bytes(1, 'little')) + assemble_pushdata(public_key))
@@ -91,7 +91,7 @@ class Script:
     @staticmethod
     def op_return(pushdatas: List[Union[str, bytes]]) -> 'Script':
         """
-        returns OP_RETURN locking script from pushdatas
+        :returns: OP_RETURN locking script from pushdatas
         """
         script: bytes = Opcode.FALSE + Opcode.RETURN
         for pushdata in pushdatas:

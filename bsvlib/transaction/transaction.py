@@ -162,7 +162,7 @@ class Transaction:
 
     def digest(self) -> List[bytes]:
         """
-        Returns the digest of unsigned transaction
+        :returns: the digest of unsigned transaction
         """
         digest = []
         for tx_input in self.tx_inputs:
@@ -178,7 +178,7 @@ class Transaction:
 
     def sign(self) -> 'Transaction':
         """
-        Sign all inputs according to their unspent type
+        sign all inputs according to their unspent type
         """
         digests = self.digest()
         for i in range(len(self.tx_inputs)):
@@ -207,13 +207,13 @@ class Transaction:
 
     def fee(self) -> int:
         """
-        actual fee paid of this transaction under the current state
+        :returns: actual fee paid of this transaction under the current state
         """
         return self.satoshi_total_in() - self.satoshi_total_out()
 
     def byte_length(self) -> int:
         """
-        actual byte length of this transaction under the current state
+        :returns: actual byte length of this transaction under the current state
         """
         return len(self.serialize())
 
@@ -221,7 +221,7 @@ class Transaction:
 
     def estimated_byte_length(self) -> int:
         """
-        estimated byte length of this transaction after signing
+        :returns: estimated byte length of this transaction after signing
         """
         estimated_length = 4 + len(unsigned_to_varint(len(self.tx_inputs))) + len(unsigned_to_varint(len(self.tx_outputs))) + 4
         for tx_input in self.tx_inputs:
@@ -240,7 +240,7 @@ class Transaction:
 
     def estimated_fee(self) -> int:
         """
-        estimated fee of this transaction after signing
+        :returns: estimated fee of this transaction after signing
         """
         return math.ceil(self.fee_rate * self.estimated_byte_length())
 

@@ -10,6 +10,9 @@ class Service:
         self.api = WhatsOnChain(chain)
 
     def get_unspents(self, address: str) -> List[Dict]:
+        """
+        :returns: unspents in dict refers to `bsvlib.transaction.unspent.Unspent`
+        """
         return self.api.get_unspents(address)
 
     def get_balance(self, address: str) -> int:
@@ -17,6 +20,6 @@ class Service:
 
     def broadcast(self, raw: str) -> Optional[str]:
         """
-        returns txid if broadcast successfully otherwise None
+        :returns: txid if broadcast successfully otherwise None
         """
         return self.api.broadcast(raw)

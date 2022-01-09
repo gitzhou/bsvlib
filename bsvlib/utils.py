@@ -23,7 +23,7 @@ def unsigned_to_varint(num: int) -> bytes:
 
 def decode_p2pkh_address(address: str) -> Tuple[bytes, Chain]:
     """
-    returns (public_key_hash_bytes, chain)
+    :returns: tuple (public_key_hash_bytes, chain)
     """
     decoded = base58check_decode(address)
     prefix = decoded[:1]
@@ -39,7 +39,7 @@ def address_to_public_key_hash(address: str) -> bytes:
 
 def decode_wif(wif: str) -> Tuple[bytes, bool, Chain]:
     """
-    returns (private_key_bytes, compressed, chain)
+    :returns: tuple (private_key_bytes, compressed, chain)
     """
     decoded = base58check_decode(wif)
     prefix = decoded[:1]

@@ -127,7 +127,7 @@ class PrivateKey:
 
     def sign(self, message: serialize, hasher: Optional[Callable[[serialize], serialize]] = hash256) -> serialize:
         """
-        returns an ECDSA signature in DER format, compliant with low-s requirement in BIP-62 and BIP-66
+        :returns: ECDSA signature in DER format, compliant with low-s requirement in BIP-62 and BIP-66
         """
         return self.key.sign(message=message, hasher=hasher)
 
