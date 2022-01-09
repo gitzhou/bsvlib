@@ -4,15 +4,16 @@ from typing import List, Dict, Optional
 
 import requests
 
+from .provider import Provider
 from ..constants import Chain
 
 
-class WhatsOnChain:
+class WhatsOnChain(Provider):
     def __init__(self, chain: Chain = Chain.MAIN):
-        self.chain = chain
-        self.url = 'https://api.whatsonchain.com/v1/bsv'
-        self.headers = {'Content-Type': 'application/json', 'Accept': 'application/json', }
-        self.timeout = 30
+        self.chain: Chain = chain
+        self.url: str = 'https://api.whatsonchain.com/v1/bsv'
+        self.headers: Dict = {'Content-Type': 'application/json', 'Accept': 'application/json', }
+        self.timeout: int = 30
 
     def get_unspents(self, address: str) -> List[Dict]:
         with suppress(Exception):

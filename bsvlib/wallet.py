@@ -2,6 +2,7 @@ from typing import Optional, List, Tuple, Union
 
 from .constants import Chain
 from .keys import PrivateKey
+from .service.provider import Provider
 from .transaction.transaction import Transaction, TxInput, TxOutput
 from .transaction.unspent import Unspent
 
@@ -11,14 +12,15 @@ class InsufficientFundsError(ValueError):
 
 
 class Wallet:
-    def __init__(self, keys: Optional[List[Union[str, int, bytes, PrivateKey]]] = None, chain: Chain = Chain.MAIN):
+    def __init__(self, keys: Optional[List[Union[str, int, bytes, PrivateKey]]] = None, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None):
         """
         create an empty wallet if keys is None
         """
-        self.chain: Chain = chain
         self.keys: List[PrivateKey] = []
         if keys:
             self.add_keys(keys)
+        self.chain: Chain = chain
+        self.provider: Provider = provider
         self.unspents: List[Unspent] = []
 
     def add_key(self, key: Union[str, int, bytes, PrivateKey, None] = None) -> 'Wallet':
@@ -42,7 +44,7 @@ class Wallet:
         if refresh:
             self.unspents = []
             for key in self.keys:
-                self.unspents.extend(Unspent.get_unspents(key, self.chain))
+                self.unspents.extend(Unspent.get_unspents(key, chain=self.chain, provider=self.provider))
         return self.unspents
 
     def get_balance(self, refresh: bool = False) -> int:

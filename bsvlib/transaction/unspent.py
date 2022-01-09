@@ -3,6 +3,7 @@ from typing import List, Union, Optional
 from .script import Script
 from ..constants import TxOutType, Chain
 from ..keys import PrivateKey
+from ..service.provider import Provider
 from ..service.service import Service
 
 
@@ -33,14 +34,14 @@ class Unspent:
         return f'<Unspent outpoint={self.txid}:{self.vout} satoshi={self.satoshi} script={self.locking_script}>'
 
     @staticmethod
-    def get_unspents(value: Union[str, PrivateKey], chain: Chain = Chain.MAIN) -> List['Unspent']:
+    def get_unspents(value: Union[str, PrivateKey], chain: Chain = Chain.MAIN, provider: Optional[Provider] = None) -> List['Unspent']:
         if isinstance(value, str):
             private_key: Optional[PrivateKey] = None
             address: str = value
         else:
             private_key: Optional[PrivateKey] = value
             address: str = private_key.address()
-        unspents_map = Service(chain).get_unspents(address)
+        unspents_map = Service(chain, provider).get_unspents(address)
         if private_key:
             for unspent_map in unspents_map:
                 unspent_map['private_key'] = private_key

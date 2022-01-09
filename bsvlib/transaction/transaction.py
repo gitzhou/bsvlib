@@ -8,7 +8,9 @@ from ..constants import SigHash, TxOutType, Chain
 from ..constants import TRANSACTION_VERSION, TRANSACTION_LOCKTIME, TRANSACTION_SEQUENCE, TRANSACTION_FEE_RATE, P2PKH_DUST_LIMIT
 from ..hash import hash256
 from ..keys import PrivateKey
+from ..service.provider import Provider
 from ..service.service import Service
+from ..service.whatsonchain import WhatsOnChain
 from ..utils import unsigned_to_varint
 
 
@@ -64,14 +66,16 @@ class TxOutput:
 
 
 class Transaction:
-    def __init__(self, tx_inputs: Optional[List[TxInput]] = None, tx_outputs: Optional[List[TxOutput]] = None, chain: Chain = Chain.MAIN,
-                 version: int = TRANSACTION_VERSION, locktime: int = TRANSACTION_LOCKTIME, fee_rate: Optional[float] = None):
+    def __init__(self, tx_inputs: Optional[List[TxInput]] = None, tx_outputs: Optional[List[TxOutput]] = None,
+                 version: int = TRANSACTION_VERSION, locktime: int = TRANSACTION_LOCKTIME, fee_rate: Optional[float] = None,
+                 chain: Chain = Chain.MAIN, provider: Provider = None):
         self.tx_inputs: List[TxInput] = tx_inputs or []
         self.tx_outputs: List[TxOutput] = tx_outputs or []
-        self.chain: Chain = chain
         self.version: int = version
         self.locktime: int = locktime
         self.fee_rate: float = fee_rate if fee_rate is not None else TRANSACTION_FEE_RATE
+        self.chain: Chain = chain
+        self.provider: Provider = provider or WhatsOnChain(chain)
 
     def serialize(self) -> bytes:
         raw = self.version.to_bytes(4, 'little')
@@ -262,4 +266,4 @@ class Transaction:
         return self
 
     def broadcast(self) -> Optional[str]:
-        return Service(self.chain).broadcast(self.hex())
+        return Service(self.chain, self.provider).broadcast(self.hex())
