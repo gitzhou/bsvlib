@@ -83,3 +83,10 @@ class Wallet:
         if t.fee() < t.estimated_fee():
             raise InsufficientFundsError(f'require {t.estimated_fee() + t.satoshi_total_out():} satoshi but only {t.satoshi_total_in()}')
         return t.add_change(leftover).sign()
+
+    def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
+                         unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None) -> Optional[str]:
+        t: Transaction = self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas)
+        t.chain = self.chain
+        t.provider = self.provider
+        return t.broadcast()
