@@ -65,7 +65,7 @@ class Wallet:
         if not self.unspents:
             raise InsufficientFundsError('transaction mush have at least one unspent')
 
-        t = Transaction(fee_rate=fee_rate)
+        t = Transaction(fee_rate=fee_rate, chain=self.chain, provider=self.provider)
         if pushdatas:
             t.add_output(TxOutput(pushdatas))
         if outputs:
@@ -86,7 +86,14 @@ class Wallet:
 
     def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
                          unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None) -> Optional[str]:
-        t: Transaction = self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas)
-        t.chain = self.chain
-        t.provider = self.provider
-        return t.broadcast()
+        """send a transaction
+        :param outputs: list of tuple (address, satoshi). if None then sweep all the unpsents to leftover
+        :param leftover: transaction change address
+        :param fee_rate: 0.5 satoshi per byte if None
+        :param unspents: list of unspents, will refresh from service if None
+        :param combine: use all available unspents if True
+        :param pushdatas: list of OP_RETURN pushdata
+
+        :returns: txid if successfully otherwise None
+        """
+        return self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas).broadcast()
