@@ -29,6 +29,7 @@ def assemble_pushdata(pushdata: bytes) -> bytes:
 
 
 class Script:
+
     def __init__(self, script: Union[str, bytes]):
         """
         create script from hex string or bytes

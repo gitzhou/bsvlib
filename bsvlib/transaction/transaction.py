@@ -15,6 +15,7 @@ from ..utils import unsigned_to_varint
 
 
 class TxInput:
+
     def __init__(self, unspent: Unspent, private_key: Optional[PrivateKey] = None, unlocking_script: Optional[Script] = None,
                  sequence: int = TRANSACTION_SEQUENCE, sighash: SigHash = SigHash.ALL):
         self.txid: str = unspent.txid
@@ -44,6 +45,7 @@ class TxInput:
 
 
 class TxOutput:
+
     def __init__(self, out: Union[str, List[Union[str, bytes]], Script], satoshi: int = 0, out_type: Optional[TxOutType] = None):
         self.satoshi = satoshi
         if isinstance(out, str):
@@ -66,6 +68,7 @@ class TxOutput:
 
 
 class Transaction:
+
     def __init__(self, tx_inputs: Optional[List[TxInput]] = None, tx_outputs: Optional[List[TxOutput]] = None,
                  version: int = TRANSACTION_VERSION, locktime: int = TRANSACTION_LOCKTIME, fee_rate: Optional[float] = None,
                  chain: Chain = Chain.MAIN, provider: Provider = None):

@@ -13,6 +13,7 @@ Point = namedtuple('Point', ('x', 'y'))
 
 
 class PublicKey:
+
     def __init__(self, public_key: Union[str, bytes, Point, CcPublicKey]):
         """
         create public key from hex string, bytes, curve point or CoinCurve public key
@@ -64,6 +65,7 @@ class PublicKey:
 
 
 class PrivateKey:
+
     def __init__(self, private_key: Union[str, int, bytes, CcPrivateKey, None] = None, chain: Optional[Chain] = None):
         """
         create private key from WIF (str), int, bytes, or CoinCurve private key

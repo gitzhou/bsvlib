@@ -6,6 +6,7 @@ from ..constants import Chain
 
 
 class Service:
+
     def __init__(self, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None):
         self.chain: Chain = chain
         self.provider = provider or WhatsOnChain(self.chain)

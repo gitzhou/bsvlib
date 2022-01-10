@@ -9,6 +9,7 @@ from ..constants import Chain
 
 
 class WhatsOnChain(Provider):
+
     def __init__(self, chain: Chain = Chain.MAIN):
         self.chain: Chain = chain
         self.url: str = 'https://api.whatsonchain.com/v1/bsv'

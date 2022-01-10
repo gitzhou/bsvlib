@@ -93,7 +93,6 @@ class Wallet:
         :param unspents: list of unspents, will refresh from service if None
         :param combine: use all available unspents if True
         :param pushdatas: list of OP_RETURN pushdata
-
         :returns: txid if successfully otherwise None
         """
         return self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas).broadcast()

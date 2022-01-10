@@ -8,6 +8,7 @@ from ..service.service import Service
 
 
 class Unspent:
+
     def __init__(self, **kwargs):
         """
         if unspent type is P2PKH, then set either private key or oddress is enought

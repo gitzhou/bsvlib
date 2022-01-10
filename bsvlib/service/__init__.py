@@ -1,3 +1,3 @@
-from .provider import *
-from .service import *
-from .whatsonchain import *
+from .provider import Provider
+from .service import Service
+from .whatsonchain import WhatsOnChain
