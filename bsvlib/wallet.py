@@ -16,11 +16,11 @@ class Wallet:
         """
         create an empty wallet if keys is None
         """
+        self.chain: Chain = chain
+        self.provider: Provider = provider
         self.keys: List[PrivateKey] = []
         if keys:
             self.add_keys(keys)
-        self.chain: Chain = chain
-        self.provider: Provider = provider
         self.unspents: List[Unspent] = []
 
     def add_key(self, key: Union[str, int, bytes, PrivateKey, None] = None) -> 'Wallet':

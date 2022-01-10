@@ -73,7 +73,7 @@ class P2pkhScriptType(ScriptType):
 
     @classmethod
     def estimated_unlocking_byte_length(cls, **kwargs) -> int:
-        return 148 if kwargs.get('private_keys')[0].compressed else 180
+        return 107 if kwargs.get('private_keys')[0].compressed else 139
 
 
 class OpReturnScriptType(ScriptType):
