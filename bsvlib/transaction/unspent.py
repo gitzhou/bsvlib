@@ -37,7 +37,5 @@ class Unspent:
 
     @classmethod
     def get_unspents(cls, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs) -> List['Unspent']:
-        private_keys: List[PrivateKey] = kwargs.get('private_keys') or []
-        address: Optional[str] = kwargs.get('address') or (private_keys[0].address() if private_keys else None)
-        unspents = Service(chain, provider).get_unspents(address=address, **kwargs)
+        unspents = Service(chain, provider).get_unspents(**kwargs)
         return [Unspent(**unspent) for unspent in unspents]

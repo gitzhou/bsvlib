@@ -6,6 +6,7 @@ import requests
 
 from .provider import Provider
 from ..constants import Chain
+from ..keys import PrivateKey
 
 
 class WhatsOnChain(Provider):
@@ -17,8 +18,12 @@ class WhatsOnChain(Provider):
         self.timeout: int = 30
 
     def get_unspents(self, **kwargs) -> List[Dict]:
+        """
+        only P2PKH unspents
+        """
         with suppress(Exception):
-            r = requests.get(f'{self.url}/{self.chain}/address/{kwargs.get("address")}/unspent', headers=self.headers, timeout=self.timeout)
+            private_key: PrivateKey = kwargs.get('private_keys')[0]
+            r = requests.get(f'{self.url}/{self.chain}/address/{private_key.address()}/unspent', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
             unspents: List[Dict] = []
             for item in r.json():
@@ -30,7 +35,8 @@ class WhatsOnChain(Provider):
 
     def get_balance(self, **kwargs) -> int:
         with suppress(Exception):
-            r = requests.get(f'{self.url}/{self.chain}/address/{kwargs.get("address")}/balance', headers=self.headers, timeout=self.timeout)
+            private_key: PrivateKey = kwargs.get('private_keys')[0]
+            r = requests.get(f'{self.url}/{self.chain}/address/{private_key.address()}/balance', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
             balance: dict = r.json()
             return balance.get('confirmed') + balance.get('unconfirmed')
