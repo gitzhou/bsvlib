@@ -2,7 +2,7 @@ from abc import abstractmethod, ABCMeta
 from typing import Union, List
 
 from .script import Script
-from ..constants import PUBLIC_KEY_HASH_BYTE_LENGTH, OP, SIGHASH
+from ..constants import PUBLIC_KEY_HASH_BYTE_LENGTH, OP, SIGHASH, PUBLIC_KEY_VALID_BYTE_LENGTH
 from ..utils import address_to_public_key_hash, assemble_pushdata
 
 
@@ -101,3 +101,33 @@ class OpReturnScriptType(ScriptType):
     @classmethod
     def estimated_unlocking_byte_length(cls, **kwargs) -> int:
         raise ValueError("OP_RETURN cannot be unlocked")
+
+
+class P2pkScriptType(ScriptType):
+
+    def __repr__(self) -> str:
+        return f'<ScriptType:P2PK>'
+
+    @classmethod
+    def locking(cls, public_key: Union[str, bytes]) -> Script:
+        """
+        from public key in format str or bytes
+        """
+        if isinstance(public_key, str):
+            pk: bytes = bytes.fromhex(public_key)
+        elif isinstance(public_key, bytes):
+            pk: bytes = public_key
+        else:
+            raise TypeError("can't parse P2PK locking script")
+        assert len(pk) in PUBLIC_KEY_VALID_BYTE_LENGTH, f'invalid byte length of public key'
+        return Script(assemble_pushdata(pk) + OP.CHECKSIG)
+
+    @classmethod
+    def unlocking(cls, **kwargs) -> Script:
+        signature: bytes = kwargs.get('signatures')[0]
+        sighash: SIGHASH = kwargs.get('sighash')
+        return Script(assemble_pushdata(signature + sighash.to_bytes(1, 'little')))
+
+    @classmethod
+    def estimated_unlocking_byte_length(cls, **kwargs) -> int:
+        return 73
