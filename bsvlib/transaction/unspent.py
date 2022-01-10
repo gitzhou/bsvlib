@@ -35,8 +35,8 @@ class Unspent:
     def __repr__(self) -> str:
         return f'<Unspent outpoint={self.txid}:{self.vout} satoshi={self.satoshi} script={self.locking_script}>'
 
-    @staticmethod
-    def get_unspents(chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs) -> List['Unspent']:
+    @classmethod
+    def get_unspents(cls, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs) -> List['Unspent']:
         private_keys: List[PrivateKey] = kwargs.get('private_keys') or []
         address: Optional[str] = kwargs.get('address') or (private_keys[0].address() if private_keys else None)
         unspents = Service(chain, provider).get_unspents(address=address, **kwargs)

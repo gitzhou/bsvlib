@@ -249,7 +249,7 @@ class Transaction:
             change_output: Optional[TxOutput] = None
             if not change_address:
                 for tx_input in self.tx_inputs:
-                    if isinstance(tx_input.script_type, P2pkhScriptType):
+                    if tx_input.script_type == P2pkhScriptType():
                         change_output = TxOutput(out=tx_input.locking_script, satoshi=fee_overpaid)
                         break
             else:

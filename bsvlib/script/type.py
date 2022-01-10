@@ -7,18 +7,24 @@ from ..utils import address_to_public_key_hash, assemble_pushdata
 
 
 class ScriptType(metaclass=ABCMeta):
+    __instances = {}
 
-    @staticmethod
+    def __new__(cls, *args, **kwargs):
+        if cls not in cls.__instances:
+            cls.__instances[cls] = super(ScriptType, cls).__new__(cls)
+        return cls.__instances[cls]
+
+    @classmethod
     @abstractmethod
-    def unlocking(**kwargs) -> Script:
+    def unlocking(cls, **kwargs) -> Script:
         """
         :returns: unlocking script
         """
         raise NotImplementedError('ScriptType.unlocking')
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def estimated_unlocking_byte_length(**kwargs) -> int:
+    def estimated_unlocking_byte_length(cls, **kwargs) -> int:
         """
         :returns: estimated byte length of signed unlocking script
         """
@@ -30,12 +36,12 @@ class UnknownScriptType(ScriptType):
     def __repr__(self) -> str:
         return f'<ScriptType:Unknown>'
 
-    @staticmethod
-    def unlocking(**kwargs) -> Script:
+    @classmethod
+    def unlocking(cls, **kwargs) -> Script:
         raise ValueError("don't know how to unlock for script of unknown type")
 
-    @staticmethod
-    def estimated_unlocking_byte_length(**kwargs) -> int:
+    @classmethod
+    def estimated_unlocking_byte_length(cls, **kwargs) -> int:
         raise ValueError("don't know how to unlock for script of unknown type")
 
 
@@ -44,8 +50,8 @@ class P2pkhScriptType(ScriptType):
     def __repr__(self) -> str:
         return f'<ScriptType:P2PKH>'
 
-    @staticmethod
-    def locking(value: Union[str, bytes]) -> Script:
+    @classmethod
+    def locking(cls, value: Union[str, bytes]) -> Script:
         """
         from address (str) or public key hash160 (bytes)
         """
@@ -58,15 +64,15 @@ class P2pkhScriptType(ScriptType):
         assert len(pkh) == PUBLIC_KEY_HASH_BYTE_LENGTH, f'invalid byte length of public key hash'
         return Script(OP.DUP + OP.HASH160 + assemble_pushdata(pkh) + OP.EQUALVERIFY + OP.CHECKSIG)
 
-    @staticmethod
-    def unlocking(**kwargs) -> Script:
+    @classmethod
+    def unlocking(cls, **kwargs) -> Script:
         signature: bytes = kwargs.get('signatures')[0]
         public_key: bytes = kwargs.get('private_keys')[0].public_key().serialize()
         sighash: SIGHASH = kwargs.get('sighash')
         return Script(assemble_pushdata(signature + sighash.to_bytes(1, 'little')) + assemble_pushdata(public_key))
 
-    @staticmethod
-    def estimated_unlocking_byte_length(**kwargs) -> int:
+    @classmethod
+    def estimated_unlocking_byte_length(cls, **kwargs) -> int:
         return 148 if kwargs.get('private_keys')[0].compressed else 180
 
 
@@ -75,8 +81,8 @@ class OpReturnScriptType(ScriptType):
     def __repr__(self) -> str:
         return f'<ScriptType:OP_RETURN>'
 
-    @staticmethod
-    def locking(pushdatas: List[Union[str, bytes]]) -> Script:
+    @classmethod
+    def locking(cls, pushdatas: List[Union[str, bytes]]) -> Script:
         script: bytes = OP.FALSE + OP.RETURN
         for pushdata in pushdatas:
             if isinstance(pushdata, str):
@@ -88,10 +94,10 @@ class OpReturnScriptType(ScriptType):
             script += assemble_pushdata(pushdata_bytes)
         return Script(script)
 
-    @staticmethod
-    def unlocking(**kwargs) -> Script:
+    @classmethod
+    def unlocking(cls, **kwargs) -> Script:
         raise ValueError("OP_RETURN cannot be unlocked")
 
-    @staticmethod
-    def estimated_unlocking_byte_length(**kwargs) -> int:
+    @classmethod
+    def estimated_unlocking_byte_length(cls, **kwargs) -> int:
         raise ValueError("OP_RETURN cannot be unlocked")
