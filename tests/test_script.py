@@ -1,4 +1,4 @@
-from bsvlib.transaction.script import Script
+from bsvlib.script.script import Script
 
 
 def test_p2pkh():

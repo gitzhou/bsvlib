@@ -1,8 +1,8 @@
 from typing import List, Union, Optional
 
-from .script import Script
 from ..constants import TxOutType, Chain
 from ..keys import PrivateKey
+from ..script.script import Script
 from ..service.provider import Provider
 from ..service.service import Service
 

@@ -6,7 +6,7 @@ from coincurve import PrivateKey as CcPrivateKey, PublicKey as CcPublicKey
 from .base58 import base58check_encode
 from .constants import Chain, ADDRESS_CHAIN_PREFIX, WIF_CHAIN_PREFIX, PUBLIC_KEY_COMPRESSED_BYTE_LENGTH
 from .hash import hash160, hash256
-from .transaction.script import Script
+from .script.script import Script
 from .utils import decode_wif
 
 Point = namedtuple('Point', ('x', 'y'))

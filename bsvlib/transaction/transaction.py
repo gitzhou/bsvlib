@@ -2,12 +2,12 @@ import math
 from io import BytesIO
 from typing import List, Optional, Union
 
-from .script import Script
 from .unspent import Unspent
 from ..constants import SigHash, TxOutType, Chain
 from ..constants import TRANSACTION_VERSION, TRANSACTION_LOCKTIME, TRANSACTION_SEQUENCE, TRANSACTION_FEE_RATE, P2PKH_DUST_LIMIT
 from ..hash import hash256
 from ..keys import PrivateKey
+from ..script.script import Script
 from ..service.provider import Provider
 from ..service.service import Service
 from ..service.whatsonchain import WhatsOnChain
