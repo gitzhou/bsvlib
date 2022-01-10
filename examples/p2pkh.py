@@ -1,5 +1,5 @@
+from bsvlib import Wallet
 from bsvlib.constants import Chain
-from bsvlib.wallet import Wallet
 
 w = Wallet(chain=Chain.TEST)
 
