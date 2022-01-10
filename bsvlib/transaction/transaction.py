@@ -16,14 +16,14 @@ from ..utils import unsigned_to_varint
 
 class TxInput:
 
-    def __init__(self, unspent: Unspent, private_key: Optional[PrivateKey] = None, unlocking_script: Optional[Script] = None,
+    def __init__(self, unspent: Unspent, private_keys: Optional[List[PrivateKey]] = None, unlocking_script: Optional[Script] = None,
                  sequence: int = TRANSACTION_SEQUENCE, sighash: SigHash = SigHash.ALL):
         self.txid: str = unspent.txid
         self.vout: int = unspent.vout
         self.satoshi: int = unspent.satoshi
         self.height: int = unspent.height
         self.confirmation: int = unspent.confirmation
-        self.private_key: Optional[PrivateKey] = private_key or unspent.private_key or None
+        self.private_keys: List[PrivateKey] = private_keys or unspent.private_keys or []
         self.unspent_type: TxOutType = unspent.unspent_type
         self.locking_script: Script = unspent.locking_script
 
@@ -192,10 +192,10 @@ class Transaction:
             tx_input = self.tx_inputs[i]
             if tx_input.unspent_type == TxOutType.P2PKH:
                 # sign as p2pkh
-                if not tx_input.private_key:
+                if not tx_input.private_keys:
                     raise ValueError(f"{tx_input} doesn't have a private key")
-                signature: bytes = tx_input.private_key.sign(digests[i])
-                public_key: bytes = tx_input.private_key.public_key().serialize()
+                signature: bytes = tx_input.private_keys[0].sign(digests[i])
+                public_key: bytes = tx_input.private_keys[0].public_key().serialize()
                 tx_input.unlocking_script = Script.p2pkh_unlocking(signature, public_key, tx_input.sighash)
             elif tx_input.unlocking_script:
                 # still good, unlocking script is ready
@@ -233,9 +233,9 @@ class Transaction:
         estimated_length = 4 + len(unsigned_to_varint(len(self.tx_inputs))) + len(unsigned_to_varint(len(self.tx_outputs))) + 4
         for tx_input in self.tx_inputs:
             if tx_input.unspent_type == TxOutType.P2PKH:
-                if not tx_input.private_key:
+                if not tx_input.private_keys:
                     raise ValueError(f"can't estimate byte length for {tx_input} without a private key")
-                estimated_length += 148 if tx_input.private_key.compressed else 180
+                estimated_length += 148 if tx_input.private_keys[0].compressed else 180
             else:
                 # TODO support other unspent type
                 raise ValueError(f"can't estimate byte length for unspent type {tx_input.unspent_type}")
