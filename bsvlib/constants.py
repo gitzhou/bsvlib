@@ -16,7 +16,7 @@ class Chain(str, Enum):
     TEST = 'test'
 
 
-class SigHash(int, Enum):
+class SIGHASH(int, Enum):
     _ALL: int = 0x01
     _NONE: int = 0x02
     _SINGLE: int = 0x03
@@ -32,7 +32,7 @@ class SigHash(int, Enum):
     SINGLE_ANYONECANPAY = _SINGLE | _ANYONECANPAY | FORK_ID
 
 
-class Opcode(bytes, Enum):
+class OP(bytes, Enum):
     FALSE = b'\x00'
     PUSHDATA1 = b'\x4c'
     PUSHDATA2 = b'\x4d'

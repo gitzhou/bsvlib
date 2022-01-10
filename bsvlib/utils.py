@@ -1,7 +1,7 @@
 from typing import Tuple, Union
 
 from .base58 import base58check_decode
-from .constants import Chain, ADDRESS_PREFIX_CHAIN, WIF_PREFIX_CHAIN
+from .constants import Chain, ADDRESS_PREFIX_CHAIN, WIF_PREFIX_CHAIN, OP
 from .hash import hash256
 
 
@@ -59,3 +59,27 @@ def txid(raw: Union[str, bytes]) -> str:
     else:
         raise TypeError('unsupported type of raw transaction')
     return hash256(raw_bytes)[::-1].hex()
+
+
+def get_pushdata_code(byte_length: int) -> bytes:
+    """
+    :returns: the corresponding PUSHDATA opcode according to the byte length of pushdata
+    """
+    if byte_length <= 0x4b:
+        return byte_length.to_bytes(1, 'little')
+    elif byte_length <= 0xff:
+        # OP_PUSHDATA1
+        return OP.PUSHDATA1 + byte_length.to_bytes(1, 'little')
+    elif byte_length <= 0xffff:
+        # OP_PUSHDATA2
+        return OP.PUSHDATA2 + byte_length.to_bytes(2, 'little')
+    else:
+        # OP_PUSHDATA4
+        return OP.PUSHDATA4 + byte_length.to_bytes(4, 'little')
+
+
+def assemble_pushdata(pushdata: bytes) -> bytes:
+    """
+    :returns: OP_PUSHDATA + pushdata
+    """
+    return get_pushdata_code(len(pushdata)) + pushdata

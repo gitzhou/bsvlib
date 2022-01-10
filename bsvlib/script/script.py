@@ -1,32 +1,6 @@
-from abc import abstractmethod, ABCMeta
 from typing import Union
 
-from ..constants import Opcode
 from ..utils import unsigned_to_varint
-
-
-def get_pushdata_code(byte_length: int) -> bytes:
-    """
-    :returns: the corresponding PUSHDATA opcode according to the byte length of pushdata
-    """
-    if byte_length <= 0x4b:
-        return byte_length.to_bytes(1, 'little')
-    elif byte_length <= 0xff:
-        # OP_PUSHDATA1
-        return Opcode.PUSHDATA1 + byte_length.to_bytes(1, 'little')
-    elif byte_length <= 0xffff:
-        # OP_PUSHDATA2
-        return Opcode.PUSHDATA2 + byte_length.to_bytes(2, 'little')
-    else:
-        # OP_PUSHDATA4
-        return Opcode.PUSHDATA4 + byte_length.to_bytes(4, 'little')
-
-
-def assemble_pushdata(pushdata: bytes) -> bytes:
-    """
-    :returns: OP_PUSHDATA + pushdata
-    """
-    return get_pushdata_code(len(pushdata)) + pushdata
 
 
 class Script:
@@ -67,30 +41,3 @@ class Script:
 
     def __repr__(self) -> str:
         return self.script.hex()
-
-
-class ScriptType(metaclass=ABCMeta):
-
-    @staticmethod
-    @abstractmethod
-    def locking(**kwargs) -> Script:
-        """
-        :returns: locking script
-        """
-        raise NotImplementedError('ScriptType.locking')
-
-    @staticmethod
-    @abstractmethod
-    def unlocking(**kwargs) -> Script:
-        """
-        :returns: unlocking script
-        """
-        raise NotImplementedError('ScriptType.unlocking')
-
-    @staticmethod
-    @abstractmethod
-    def estimated_unlocking_byte_length(**kwargs) -> int:
-        """
-        :returns: estimated byte length of signed unlocking script
-        """
-        raise NotImplementedError('ScriptType.estimated_unlocking_byte_length')
