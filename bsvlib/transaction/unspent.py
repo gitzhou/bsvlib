@@ -12,7 +12,7 @@ class Unspent:
 
     def __init__(self, **kwargs):
         """
-        if script type is P2PKH, then set either private key or oddress is enought
+        if script type is P2PKH, then set either private key or address is enough
         otherwise, then essential to set both locking script and script type
         """
         self.txid: str = kwargs.get('txid')
@@ -39,5 +39,5 @@ class Unspent:
     def get_unspents(chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs) -> List['Unspent']:
         private_keys: List[PrivateKey] = kwargs.get('private_keys') or []
         address: Optional[str] = kwargs.get('address') or (private_keys[0].address() if private_keys else None)
-        unspents_map = Service(chain, provider).get_unspents(address=address, **kwargs)
-        return [Unspent(**unspent_map) for unspent_map in unspents_map]
+        unspents = Service(chain, provider).get_unspents(address=address, **kwargs)
+        return [Unspent(**unspent) for unspent in unspents]

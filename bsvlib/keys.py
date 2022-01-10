@@ -7,6 +7,7 @@ from .base58 import base58check_encode
 from .constants import Chain, ADDRESS_CHAIN_PREFIX, WIF_CHAIN_PREFIX, PUBLIC_KEY_COMPRESSED_BYTE_LENGTH
 from .hash import hash160, hash256
 from .script.script import Script
+from .script.type import P2pkhScriptType
 from .utils import decode_wif
 
 Point = namedtuple('Point', ('x', 'y'))
@@ -50,7 +51,7 @@ class PublicKey:
         return hash160(self.serialize(compressed))
 
     def locking_script(self, compressed: Optional[bool] = None) -> Script:
-        return Script.p2pkh_locking(self.hash160(compressed))
+        return P2pkhScriptType.locking(self.hash160(compressed))
 
     def address(self, compressed: Optional[bool] = None, chain: Chain = Chain.MAIN) -> str:
         return base58check_encode(ADDRESS_CHAIN_PREFIX.get(chain) + self.hash160(compressed))

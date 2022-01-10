@@ -54,7 +54,7 @@ class Wallet:
     def create_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
                            unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None) -> Transaction:
         """create a signed transaction
-        :param outputs: list of tuple (address, satoshi). if None then sweep all the unpsents to leftover
+        :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address
         :param fee_rate: 0.5 satoshi per byte if None
         :param unspents: list of unspents, will refresh from service if None
@@ -87,7 +87,7 @@ class Wallet:
     def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
                          unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None) -> Optional[str]:
         """send a transaction
-        :param outputs: list of tuple (address, satoshi). if None then sweep all the unpsents to leftover
+        :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address
         :param fee_rate: 0.5 satoshi per byte if None
         :param unspents: list of unspents, will refresh from service if None
