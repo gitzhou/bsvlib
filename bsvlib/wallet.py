@@ -44,7 +44,7 @@ class Wallet:
         if refresh:
             self.unspents = []
             for key in self.keys:
-                self.unspents.extend(Unspent.get_unspents(key, chain=self.chain, provider=self.provider))
+                self.unspents.extend(Unspent.get_unspents(chain=self.chain, provider=self.provider, private_keys=[key]))
         return self.unspents
 
     def get_balance(self, refresh: bool = False) -> int:

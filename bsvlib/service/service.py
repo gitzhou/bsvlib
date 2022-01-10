@@ -11,17 +11,17 @@ class Service:
         self.chain: Chain = chain
         self.provider = provider or WhatsOnChain(self.chain)
 
-    def get_unspents(self, address: str) -> List[Dict]:
+    def get_unspents(self, **kwargs) -> List[Dict]:
         """
         :returns: unspents in dict refers to `bsvlib.transaction.unspent.Unspent`
         """
-        return self.provider.get_unspents(address)
+        return self.provider.get_unspents(**kwargs)
 
-    def get_balance(self, address: str) -> int:
+    def get_balance(self, **kwargs) -> int:
         """
         :returns: balance in satoshi
         """
-        return self.provider.get_balance(address)
+        return self.provider.get_balance(**kwargs)
 
     def broadcast(self, raw: str) -> Optional[str]:
         """

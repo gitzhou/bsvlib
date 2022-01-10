@@ -1,4 +1,4 @@
-from typing import List, Union, Optional
+from typing import List, Optional
 
 from ..constants import Chain
 from ..keys import PrivateKey
@@ -12,8 +12,8 @@ class Unspent:
 
     def __init__(self, **kwargs):
         """
-        if unspent type is P2PKH, then set either private key or oddress is enought
-        otherwise, then essential to set both locking script and unspent type
+        if script type is P2PKH, then set either private key or oddress is enought
+        otherwise, then essential to set both locking script and script type
         """
         self.txid: str = kwargs.get('txid')
         self.vout: int = int(kwargs.get('vout'))
@@ -36,15 +36,8 @@ class Unspent:
         return f'<Unspent outpoint={self.txid}:{self.vout} satoshi={self.satoshi} script={self.locking_script}>'
 
     @staticmethod
-    def get_unspents(value: Union[str, PrivateKey], chain: Chain = Chain.MAIN, provider: Optional[Provider] = None) -> List['Unspent']:
-        if isinstance(value, str):
-            private_key: Optional[PrivateKey] = None
-            address: str = value
-        else:
-            private_key: Optional[PrivateKey] = value
-            address: str = private_key.address()
-        unspents_map = Service(chain, provider).get_unspents(address)
-        if private_key:
-            for unspent_map in unspents_map:
-                unspent_map['private_keys'] = [private_key]
+    def get_unspents(chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs) -> List['Unspent']:
+        private_keys: List[PrivateKey] = kwargs.get('private_keys') or []
+        address: Optional[str] = kwargs.get('address') or (private_keys[0].address() if private_keys else None)
+        unspents_map = Service(chain, provider).get_unspents(address=address, **kwargs)
         return [Unspent(**unspent_map) for unspent_map in unspents_map]

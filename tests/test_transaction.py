@@ -46,7 +46,7 @@ def test_transaction_digest():
     t: Transaction = Transaction()
     t.add_input(Unspent(txid='d2bc57099dd434a5adb51f7de38cc9b8565fb208090d9b5ea7a6b4778e1fdd48', vout=1, satoshi=1000, address=address))
     t.add_output(TxOutput(out='1JDZRGf5fPjGTpqLNwjHFFZnagcZbwDsxw', satoshi=800))
-    assert t.digest() == expected_digest
+    assert t.digests() == expected_digest
 
     # https://whatsonchain.com/tx/c04bbd007ad3987f9b2ea8534175b5e436e43d64471bf32139b5851adf9f477e
     expected_digest = [digest2, digest3]
@@ -56,4 +56,4 @@ def test_transaction_digest():
         Unspent(txid='fcc1a53e8bb01dbc094e86cb86f195219022c26e0c03d6f18ea17c3a3ba3c1e4', vout=0, satoshi=1000, address=address),
     ])
     t.add_output(TxOutput(out='18CgRLx9hFZqDZv75J5kED7ANnDriwvpi1', satoshi=1700))
-    assert t.digest() == expected_digest
+    assert t.digests() == expected_digest

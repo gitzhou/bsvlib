@@ -16,17 +16,21 @@ class WhatsOnChain(Provider):
         self.headers: Dict = {'Content-Type': 'application/json', 'Accept': 'application/json', }
         self.timeout: int = 30
 
-    def get_unspents(self, address: str) -> List[Dict]:
+    def get_unspents(self, **kwargs) -> List[Dict]:
         with suppress(Exception):
-            r = requests.get(f'{self.url}/{self.chain}/address/{address}/unspent', headers=self.headers, timeout=self.timeout)
+            r = requests.get(f'{self.url}/{self.chain}/address/{kwargs.get("address")}/unspent', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
-            unspents: Dict = r.json()
-            return [{'txid': unspent['tx_hash'], 'vout': unspent['tx_pos'], 'satoshi': unspent['value'], 'height': unspent['height'], 'address': address} for unspent in unspents]
+            unspents: List[Dict] = []
+            for item in r.json():
+                unspent = {'txid': item['tx_hash'], 'vout': item['tx_pos'], 'satoshi': item['value'], 'height': item['height']}
+                unspent.update(kwargs)
+                unspents.append(unspent)
+            return unspents
         return []
 
-    def get_balance(self, address: str) -> int:
+    def get_balance(self, **kwargs) -> int:
         with suppress(Exception):
-            r = requests.get(f'{self.url}/{self.chain}/address/{address}/balance', headers=self.headers, timeout=self.timeout)
+            r = requests.get(f'{self.url}/{self.chain}/address/{kwargs.get("address")}/balance', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
             balance: dict = r.json()
             return balance.get('confirmed') + balance.get('unconfirmed')

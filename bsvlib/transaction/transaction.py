@@ -168,7 +168,7 @@ class Transaction:
         stream.write(tx_input.sighash.to_bytes(4, 'little'))
         return stream.getvalue()
 
-    def digest(self) -> List[bytes]:
+    def digests(self) -> List[bytes]:
         """
         :returns: the digest of unsigned transaction
         """
@@ -184,11 +184,15 @@ class Transaction:
             digest.append(self._digest(tx_input, hash_prevouts, hash_sequence, hash_outputs))
         return digest
 
+    def digest(self, index: int) -> bytes:
+        assert 0 <= index < len(self.tx_inputs), f'index out of range [0, {len(self.tx_inputs)})'
+        return self.digests()[index]
+
     def sign(self) -> 'Transaction':
         """
-        sign all inputs according to their unspent type
+        sign all inputs according to their script type
         """
-        digests = self.digest()
+        digests = self.digests()
         for i in range(len(self.tx_inputs)):
             tx_input = self.tx_inputs[i]
             if not tx_input.unlocking_script:
