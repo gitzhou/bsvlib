@@ -1,7 +1,8 @@
-from typing import Union, List
+from abc import abstractmethod, ABCMeta
+from typing import Union
 
-from ..constants import Opcode, PUBLIC_KEY_VALID_BYTE_LENGTH, PUBLIC_KEY_HASH_BYTE_LENGTH, SigHash
-from ..utils import unsigned_to_varint, address_to_public_key_hash
+from ..constants import Opcode
+from ..utils import unsigned_to_varint
 
 
 def get_pushdata_code(byte_length: int) -> bytes:
@@ -67,40 +68,29 @@ class Script:
     def __repr__(self) -> str:
         return self.script.hex()
 
-    @staticmethod
-    def p2pkh_locking(value: Union[str, bytes]) -> 'Script':
-        """
-        :returns: P2PKH locking script from address (str) or public key hash160 (bytes)
-        """
-        if isinstance(value, str):
-            pkh: bytes = address_to_public_key_hash(value)
-        elif isinstance(value, bytes):
-            pkh: bytes = value
-        else:
-            raise TypeError('unsupported type when parsing P2PKH locking script')
-        assert len(pkh) == PUBLIC_KEY_HASH_BYTE_LENGTH, f'invalid byte length of public key hash'
-        return Script(Opcode.DUP + Opcode.HASH160 + assemble_pushdata(pkh) + Opcode.EQUALVERIFY + Opcode.CHECKSIG)
+
+class ScriptType(metaclass=ABCMeta):
 
     @staticmethod
-    def p2pkh_unlocking(signature: bytes, public_key: bytes, sighash: SigHash) -> 'Script':
+    @abstractmethod
+    def locking(**kwargs) -> Script:
         """
-        :returns: P2PKH unlocking script
+        :returns: locking script
         """
-        assert len(public_key) in PUBLIC_KEY_VALID_BYTE_LENGTH, f'invalid byte length of public key'
-        return Script(assemble_pushdata(signature + sighash.to_bytes(1, 'little')) + assemble_pushdata(public_key))
+        raise NotImplementedError('ScriptType.locking')
 
     @staticmethod
-    def op_return(pushdatas: List[Union[str, bytes]]) -> 'Script':
+    @abstractmethod
+    def unlocking(**kwargs) -> Script:
         """
-        :returns: OP_RETURN locking script from pushdatas
+        :returns: unlocking script
         """
-        script: bytes = Opcode.FALSE + Opcode.RETURN
-        for pushdata in pushdatas:
-            if isinstance(pushdata, str):
-                pushdata_bytes: bytes = pushdata.encode('utf-8')
-            elif isinstance(pushdata, bytes):
-                pushdata_bytes: bytes = pushdata
-            else:
-                raise TypeError('unsupported type when parsing OP_RETURN locking script')
-            script += assemble_pushdata(pushdata_bytes)
-        return Script(script)
+        raise NotImplementedError('ScriptType.unlocking')
+
+    @staticmethod
+    @abstractmethod
+    def estimated_unlocking_byte_length(**kwargs) -> int:
+        """
+        :returns: estimated byte length of signed unlocking script
+        """
+        raise NotImplementedError('ScriptType.estimated_unlocking_byte_length')

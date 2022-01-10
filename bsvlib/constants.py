@@ -32,12 +32,6 @@ class SigHash(int, Enum):
     SINGLE_ANYONECANPAY = _SINGLE | _ANYONECANPAY | FORK_ID
 
 
-class TxOutType(str, Enum):
-    P2PKH = 'p2pkh'
-    OP_RETURN = 'op_return'
-    UNKNOWN = 'unknown'
-
-
 class Opcode(bytes, Enum):
     FALSE = b'\x00'
     PUSHDATA1 = b'\x4c'

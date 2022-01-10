@@ -3,11 +3,13 @@ from io import BytesIO
 from typing import List, Optional, Union
 
 from .unspent import Unspent
-from ..constants import SigHash, TxOutType, Chain
+from ..constants import SigHash, Chain
 from ..constants import TRANSACTION_VERSION, TRANSACTION_LOCKTIME, TRANSACTION_SEQUENCE, TRANSACTION_FEE_RATE, P2PKH_DUST_LIMIT
 from ..hash import hash256
 from ..keys import PrivateKey
-from ..script.script import Script
+from ..script.opreturn import OpReturnScriptType
+from ..script.p2pkh import P2pkhScriptType
+from ..script.script import Script, ScriptType
 from ..service.provider import Provider
 from ..service.service import Service
 from ..service.whatsonchain import WhatsOnChain
@@ -24,7 +26,7 @@ class TxInput:
         self.height: int = unspent.height
         self.confirmation: int = unspent.confirmation
         self.private_keys: List[PrivateKey] = private_keys or unspent.private_keys or []
-        self.unspent_type: TxOutType = unspent.unspent_type
+        self.unspent_type: ScriptType = unspent.unspent_type
         self.locking_script: Script = unspent.locking_script
 
         self.unlocking_script: Script = unlocking_script
@@ -46,20 +48,20 @@ class TxInput:
 
 class TxOutput:
 
-    def __init__(self, out: Union[str, List[Union[str, bytes]], Script], satoshi: int = 0, out_type: Optional[TxOutType] = None):
+    def __init__(self, out: Union[str, List[Union[str, bytes]], Script], satoshi: int = 0, script_type: Optional[ScriptType] = None):
         self.satoshi = satoshi
         if isinstance(out, str):
             # from address
-            self.locking_script: Script = Script.p2pkh_locking(out)
-            self.out_type: TxOutType = TxOutType.P2PKH
+            self.locking_script: Script = P2pkhScriptType.locking(address=out)
+            self.script_type: ScriptType = P2pkhScriptType()
         elif isinstance(out, List):
             # from list of pushdata
-            self.locking_script: Script = Script.op_return(out)
-            self.out_type: TxOutType = TxOutType.OP_RETURN
+            self.locking_script: Script = OpReturnScriptType.locking(pushdatas=out)
+            self.script_type: ScriptType = OpReturnScriptType()
         elif isinstance(out, Script):
             # from locking script
             self.locking_script: Script = out
-            self.out_type: TxOutType = out_type or TxOutType.UNKNOWN
+            self.script_type: ScriptType = script_type
         else:
             raise TypeError('unsupported transaction output type')
 
@@ -190,13 +192,13 @@ class Transaction:
         digests = self.digest()
         for i in range(len(self.tx_inputs)):
             tx_input = self.tx_inputs[i]
-            if tx_input.unspent_type == TxOutType.P2PKH:
+            if isinstance(tx_input.unspent_type, P2pkhScriptType):
                 # sign as p2pkh
                 if not tx_input.private_keys:
                     raise ValueError(f"{tx_input} doesn't have a private key")
                 signature: bytes = tx_input.private_keys[0].sign(digests[i])
                 public_key: bytes = tx_input.private_keys[0].public_key().serialize()
-                tx_input.unlocking_script = Script.p2pkh_unlocking(signature, public_key, tx_input.sighash)
+                tx_input.unlocking_script = P2pkhScriptType.unlocking(signature=signature, public_key=public_key, sighash=tx_input.sighash)
             elif tx_input.unlocking_script:
                 # still good, unlocking script is ready
                 continue
@@ -232,10 +234,10 @@ class Transaction:
         """
         estimated_length = 4 + len(unsigned_to_varint(len(self.tx_inputs))) + len(unsigned_to_varint(len(self.tx_outputs))) + 4
         for tx_input in self.tx_inputs:
-            if tx_input.unspent_type == TxOutType.P2PKH:
+            if isinstance(tx_input.unspent_type, P2pkhScriptType):
                 if not tx_input.private_keys:
                     raise ValueError(f"can't estimate byte length for {tx_input} without a private key")
-                estimated_length += 148 if tx_input.private_keys[0].compressed else 180
+                estimated_length += P2pkhScriptType.estimated_unlocking_byte_length(compressed=tx_input.private_keys[0].compressed)
             else:
                 # TODO support other unspent type
                 raise ValueError(f"can't estimate byte length for unspent type {tx_input.unspent_type}")
@@ -259,7 +261,7 @@ class Transaction:
             change_output: Optional[TxOutput] = None
             if not change_address:
                 for tx_input in self.tx_inputs:
-                    if tx_input.unspent_type == TxOutType.P2PKH:
+                    if isinstance(tx_input.unspent_type, P2pkhScriptType):
                         change_output = TxOutput(out=tx_input.locking_script, satoshi=fee_overpaid)
                         break
             else:

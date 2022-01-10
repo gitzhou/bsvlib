@@ -1,8 +1,9 @@
 from typing import List, Union, Optional
 
-from ..constants import TxOutType, Chain
+from ..constants import Chain
 from ..keys import PrivateKey
-from ..script.script import Script
+from ..script.p2pkh import P2pkhScriptType
+from ..script.script import Script, ScriptType
 from ..service.provider import Provider
 from ..service.service import Service
 
@@ -25,9 +26,9 @@ class Unspent:
         self.address: str = kwargs.get('address') or (self.private_keys[0].address() if self.private_keys else None)
         # address is good when either address or private keys is set
         # if unspent type is not set then check address, otherwise check unspent type only
-        self.unspent_type: TxOutType = kwargs.get('unspent_type') or (TxOutType.P2PKH if self.address else TxOutType.UNKNOWN)
+        self.unspent_type: ScriptType = kwargs.get('unspent_type') or (P2pkhScriptType() if self.address else None)
         # if locking_script is not set then parse from address, otherwise check locking_script only
-        self.locking_script: Script = kwargs.get('locking_script') or (Script.p2pkh_locking(self.address) if self.address else None)
+        self.locking_script: Script = kwargs.get('locking_script') or (P2pkhScriptType.locking(address=self.address) if self.address else None)
         # validate
         assert self.txid and self.vout is not None and self.satoshi is not None and self.locking_script, f'bad unspent'
 
