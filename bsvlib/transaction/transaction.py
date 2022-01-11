@@ -1,6 +1,6 @@
 import math
 from io import BytesIO
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict, Any
 
 from .unspent import Unspent
 from ..constants import SIGHASH, Chain
@@ -72,7 +72,7 @@ class Transaction:
 
     def __init__(self, tx_inputs: Optional[List[TxInput]] = None, tx_outputs: Optional[List[TxOutput]] = None,
                  version: int = TRANSACTION_VERSION, locktime: int = TRANSACTION_LOCKTIME, fee_rate: Optional[float] = None,
-                 chain: Chain = Chain.MAIN, provider: Provider = None):
+                 chain: Chain = Chain.MAIN, provider: Provider = None, **kwargs):
         self.tx_inputs: List[TxInput] = tx_inputs or []
         self.tx_outputs: List[TxOutput] = tx_outputs or []
         self.version: int = version
@@ -80,6 +80,7 @@ class Transaction:
         self.fee_rate: float = fee_rate if fee_rate is not None else TRANSACTION_FEE_RATE
         self.chain: Chain = chain
         self.provider: Provider = provider or WhatsOnChain(chain)
+        self.kwargs: Dict[str, Any] = dict(**kwargs) or {}
 
     def serialize(self) -> bytes:
         raw = self.version.to_bytes(4, 'little')
@@ -91,12 +92,6 @@ class Transaction:
             raw += tx_output.serialize()
         raw += self.locktime.to_bytes(4, 'little')
         return raw
-
-    def inputs(self) -> List[TxInput]:
-        return self.tx_inputs
-
-    def outputs(self) -> List[TxOutput]:
-        return self.tx_outputs
 
     def add_input(self, tx_input: Union[TxInput, Unspent]) -> 'Transaction':
         if isinstance(tx_input, TxInput):
@@ -170,7 +165,7 @@ class Transaction:
 
     def digests(self) -> List[bytes]:
         """
-        :returns: the digest of unsigned transaction
+        :returns: the digests of unsigned transaction
         """
         digest = []
         for tx_input in self.tx_inputs:
@@ -185,10 +180,13 @@ class Transaction:
         return digest
 
     def digest(self, index: int) -> bytes:
+        """
+        :returns: digest of the input specified by index
+        """
         assert 0 <= index < len(self.tx_inputs), f'index out of range [0, {len(self.tx_inputs)})'
         return self.digests()[index]
 
-    def sign(self) -> 'Transaction':
+    def sign(self, **kwargs) -> 'Transaction':
         """
         sign all inputs according to their script type
         """
@@ -197,7 +195,8 @@ class Transaction:
             tx_input = self.tx_inputs[i]
             if not tx_input.unlocking_script:
                 signatures: List[bytes] = [private_key.sign(digests[i]) for private_key in tx_input.private_keys]
-                tx_input.unlocking_script = tx_input.script_type.unlocking(signatures=signatures, private_keys=tx_input.private_keys, sighash=tx_input.sighash)
+                payload = {'signatures': signatures, 'private_keys': tx_input.private_keys, 'sighash': tx_input.sighash}
+                tx_input.unlocking_script = tx_input.script_type.unlocking(**payload, **self.kwargs, **kwargs)
         return self
 
     def satoshi_total_in(self) -> int:
@@ -220,7 +219,7 @@ class Transaction:
 
     size = byte_length
 
-    def estimated_byte_length(self) -> int:
+    def estimated_byte_length(self, **kwargs) -> int:
         """
         :returns: estimated byte length of this transaction after signing
         """
@@ -228,7 +227,7 @@ class Transaction:
         for tx_input in self.tx_inputs:
             if not tx_input.private_keys:
                 raise ValueError(f"can't estimate byte length for {tx_input} without private keys")
-            estimated_length += 41 + tx_input.script_type.estimated_unlocking_byte_length(private_keys=tx_input.private_keys)
+            estimated_length += 41 + tx_input.script_type.estimated_unlocking_byte_length(private_keys=tx_input.private_keys, **self.kwargs, **kwargs)
         for tx_output in self.tx_outputs:
             estimated_length += 8 + len(tx_output.locking_script.byte_length_varint()) + tx_output.locking_script.byte_length()
         return estimated_length
@@ -242,7 +241,9 @@ class Transaction:
         return math.ceil(self.fee_rate * self.estimated_byte_length())
 
     def add_change(self, change_address: Optional[str] = None) -> 'Transaction':
+        # byte length increased after adding a P2PKH change output
         size_increased = 34 + len(unsigned_to_varint(len(self.tx_outputs) + 1)) - len(unsigned_to_varint(len(self.tx_outputs)))
+        # then we know the estimated byte length after signing, of this transaction with a change output
         fee_expected = math.ceil(self.fee_rate * (self.estimated_byte_length() + size_increased))
         fee_overpaid = self.fee() - fee_expected
         if fee_overpaid >= P2PKH_DUST_LIMIT:

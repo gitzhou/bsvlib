@@ -7,6 +7,9 @@ from ..utils import address_to_public_key_hash, assemble_pushdata
 
 
 class ScriptType(metaclass=ABCMeta):
+    """
+    script type demonstration in singleton
+    """
     __instances = {}
 
     def __new__(cls, *args, **kwargs):
@@ -17,7 +20,12 @@ class ScriptType(metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def unlocking(cls, **kwargs) -> Script:
-        """
+        """kwargs will pass the following at least
+        {
+            'signatures': List[bytes] DER formated,
+            'private_keys': List[bsvlib.keys.PrivateKey],
+            'sighash': bsvlib.constants.SIGHASH,
+        }
         :returns: unlocking script
         """
         raise NotImplementedError('ScriptType.unlocking')
@@ -25,7 +33,10 @@ class ScriptType(metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def estimated_unlocking_byte_length(cls, **kwargs) -> int:
-        """
+        """kwargs will pass the following at least
+        {
+            'private_keys': List[bsvlib.keys.PrivateKey],
+        }
         :returns: estimated byte length of signed unlocking script
         """
         raise NotImplementedError('ScriptType.estimated_unlocking_byte_length')

@@ -6,14 +6,20 @@ class Provider(metaclass=ABCMeta):
 
     @abstractmethod
     def get_unspents(self, **kwargs) -> List[Dict]:
-        """
-        :returns: unspents in dict refers to `bsvlib.transaction.unspent.Unspent`
+        """kwargs will pass the following at least
+        {
+            'private_keys': List[bsvlib.keys.PrivateKey],
+        }
+        :returns: unspents in dict format refers to bsvlib.transaction.unspent.Unspent
         """
         raise NotImplementedError('Provider.get_unspents')
 
     @abstractmethod
     def get_balance(self, **kwargs) -> int:
-        """
+        """kwargs will pass the following at least
+        {
+            'private_keys': List[bsvlib.keys.PrivateKey],
+        }
         :returns: balance in satoshi
         """
         raise NotImplementedError('Provider.get_balance')

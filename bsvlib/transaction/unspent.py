@@ -12,7 +12,7 @@ class Unspent:
 
     def __init__(self, **kwargs):
         """
-        if script type is P2PKH, then set either private key or address is enough
+        if script type is P2PKH, then set either one private key or address is enough
         otherwise, then essential to set both locking script and script type
         """
         self.txid: str = kwargs.get('txid')

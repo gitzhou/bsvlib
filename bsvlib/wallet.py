@@ -1,8 +1,9 @@
-from typing import Optional, List, Tuple, Union
+from typing import Optional, List, Tuple, Union, Dict, Any
 
 from .constants import Chain
 from .keys import PrivateKey
 from .service.provider import Provider
+from .service.service import Service
 from .transaction.transaction import Transaction, TxInput, TxOutput
 from .transaction.unspent import Unspent
 
@@ -12,7 +13,7 @@ class InsufficientFundsError(ValueError):
 
 
 class Wallet:
-    def __init__(self, keys: Optional[List[Union[str, int, bytes, PrivateKey]]] = None, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None):
+    def __init__(self, keys: Optional[List[Union[str, int, bytes, PrivateKey]]] = None, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs):
         """
         create an empty wallet if keys is None
         """
@@ -22,6 +23,7 @@ class Wallet:
         if keys:
             self.add_keys(keys)
         self.unspents: List[Unspent] = []
+        self.kwargs: Dict[str, Any] = dict(**kwargs) or {}
 
     def add_key(self, key: Union[str, int, bytes, PrivateKey, None] = None) -> 'Wallet':
         """
@@ -40,19 +42,21 @@ class Wallet:
     def get_keys(self) -> List[PrivateKey]:
         return self.keys
 
-    def get_unspents(self, refresh: bool = False) -> List[Unspent]:
+    def get_unspents(self, refresh: bool = False, **kwargs) -> List[Unspent]:
         if refresh:
             self.unspents = []
             for key in self.keys:
-                self.unspents.extend(Unspent.get_unspents(chain=self.chain, provider=self.provider, private_keys=[key]))
+                self.unspents.extend(Unspent.get_unspents(chain=self.chain, provider=self.provider, private_keys=[key], **self.kwargs, **kwargs))
         return self.unspents
 
-    def get_balance(self, refresh: bool = False) -> int:
-        self.get_unspents(refresh)
+    def get_balance(self, refresh: bool = False, **kwargs) -> int:
+        if refresh:
+            return sum([Service(self.chain, self.provider).get_balance(private_keys=[key], **self.kwargs, **kwargs) for key in self.keys])
         return sum([unspent.satoshi for unspent in self.unspents])
 
-    def create_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
-                           unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None) -> Transaction:
+    def create_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
+                           fee_rate: Optional[float] = None, unspents: Optional[List[Unspent]] = None,
+                           combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None, **kwargs) -> Transaction:
         """create a signed transaction
         :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address
@@ -60,8 +64,9 @@ class Wallet:
         :param unspents: list of unspents, will refresh from service if None
         :param combine: use all available unspents if True
         :param pushdatas: list of OP_RETURN pushdata
+        :param kwargs: passing to get unspents and sign
         """
-        self.unspents = unspents or self.get_unspents(refresh=True)
+        self.unspents = unspents or self.get_unspents(refresh=True, **self.kwargs, **kwargs)
         if not self.unspents:
             raise InsufficientFundsError('transaction mush have at least one unspent')
 
@@ -82,10 +87,10 @@ class Wallet:
                 t.add_input(TxInput(unspent))
         if t.fee() < t.estimated_fee():
             raise InsufficientFundsError(f'require {t.estimated_fee() + t.satoshi_total_out():} satoshi but only {t.satoshi_total_in()}')
-        return t.add_change(leftover).sign()
+        return t.add_change(leftover).sign(**self.kwargs, **kwargs)
 
     def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
-                         unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None) -> Optional[str]:
+                         unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None, **kwargs) -> Optional[str]:
         """send a transaction
         :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address
@@ -93,6 +98,7 @@ class Wallet:
         :param unspents: list of unspents, will refresh from service if None
         :param combine: use all available unspents if True
         :param pushdatas: list of OP_RETURN pushdata
+        :param kwargs: passing to get unspents and sign
         :returns: txid if successfully otherwise None
         """
-        return self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas).broadcast()
+        return self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas, **kwargs).broadcast()

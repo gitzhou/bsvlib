@@ -5,8 +5,7 @@ from typing import Dict, List
 TRANSACTION_SEQUENCE: int = int(os.getenv('BSVLIB_TRANSACTION_SEQUENCE') or 0xffffffff)
 TRANSACTION_VERSION: int = int(os.getenv('BSVLIB_TRANSACTION_VERSION') or 1)
 TRANSACTION_LOCKTIME: int = int(os.getenv('BSVLIB_TRANSACTION_LOCKTIME') or 0)
-# satoshi per byte
-TRANSACTION_FEE_RATE: float = float(os.getenv('BSVLIB_TRANSACTION_FEE_RATE') or 0.5)
+TRANSACTION_FEE_RATE: float = float(os.getenv('BSVLIB_TRANSACTION_FEE_RATE') or 0.5)  # satoshi per byte
 
 P2PKH_DUST_LIMIT: int = int(os.getenv('BSVLIB_P2PKH_DUST_LIMIT') or 135)
 

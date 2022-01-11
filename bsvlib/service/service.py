@@ -12,13 +12,19 @@ class Service:
         self.provider = provider or WhatsOnChain(self.chain)
 
     def get_unspents(self, **kwargs) -> List[Dict]:
-        """
-        :returns: unspents in dict refers to `bsvlib.transaction.unspent.Unspent`
+        """kwargs will pass the following at least
+        {
+            'private_keys': List[bsvlib.keys.PrivateKey],
+        }
+        :returns: unspents in dict format refers to bsvlib.transaction.unspent.Unspent
         """
         return self.provider.get_unspents(**kwargs)
 
     def get_balance(self, **kwargs) -> int:
-        """
+        """kwargs will pass the following at least
+        {
+            'private_keys': List[bsvlib.keys.PrivateKey],
+        }
         :returns: balance in satoshi
         """
         return self.provider.get_balance(**kwargs)

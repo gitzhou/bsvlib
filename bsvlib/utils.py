@@ -1,8 +1,7 @@
-from typing import Tuple, Union
+from typing import Tuple
 
 from .base58 import base58check_decode
 from .constants import Chain, ADDRESS_PREFIX_CHAIN, WIF_PREFIX_CHAIN, OP
-from .hash import hash256
 
 
 def unsigned_to_varint(num: int) -> bytes:
@@ -49,16 +48,6 @@ def decode_wif(wif: str) -> Tuple[bytes, bool, Chain]:
     if len(wif) == 52 and decoded[-1] == 1:
         return decoded[1:-1], True, chain
     return decoded[1:], False, chain
-
-
-def txid(raw: Union[str, bytes]) -> str:
-    if isinstance(raw, str):
-        raw_bytes = bytes.fromhex(raw)
-    elif isinstance(raw, bytes):
-        raw_bytes = raw
-    else:
-        raise TypeError('unsupported type of raw transaction')
-    return hash256(raw_bytes)[::-1].hex()
 
 
 def get_pushdata_code(byte_length: int) -> bytes:
