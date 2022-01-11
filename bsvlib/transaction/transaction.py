@@ -15,6 +15,10 @@ from ..service.whatsonchain import WhatsOnChain
 from ..utils import unsigned_to_varint
 
 
+class InsufficientFundsError(ValueError):
+    pass
+
+
 class TxInput:
 
     def __init__(self, unspent: Unspent, private_keys: Optional[List[PrivateKey]] = None, unlocking_script: Optional[Script] = None,
@@ -190,6 +194,8 @@ class Transaction:
         """
         sign all inputs according to their script type
         """
+        if self.fee() < self.estimated_fee():
+            raise InsufficientFundsError(f'require {self.estimated_fee() + self.satoshi_total_out()} satoshi but only {self.satoshi_total_in()}')
         digests = self.digests()
         for i in range(len(self.tx_inputs)):
             tx_input = self.tx_inputs[i]

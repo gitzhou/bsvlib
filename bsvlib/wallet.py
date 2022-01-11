@@ -6,12 +6,8 @@ from .constants import Chain, THREAD_POOL_MAX_EXECUTORS
 from .keys import PrivateKey
 from .service.provider import Provider
 from .service.service import Service
-from .transaction.transaction import Transaction, TxInput, TxOutput
+from .transaction.transaction import Transaction, TxOutput, InsufficientFundsError
 from .transaction.unspent import Unspent
-
-
-class InsufficientFundsError(ValueError):
-    pass
 
 
 def get_unspents_wrapper(d: Dict) -> List['Unspent']:
@@ -90,17 +86,22 @@ class Wallet:
         if outputs:
             t.add_outputs([TxOutput(output[0], output[1]) for output in outputs])
         # pick unspent
+        picked_unspents = []
         if combine or not outputs:
-            t.add_inputs([TxInput(unspent) for unspent in self.unspents])
+            picked_unspents = self.unspents
+            self.unspents = []
+            t.add_inputs([unspent for unspent in picked_unspents])
         else:
-            picked_unspents = [self.unspents.pop(0)]
-            t.add_input(TxInput(picked_unspents[0]))
+            unspent = self.unspents.pop(0)
+            picked_unspents.append(unspent)
+            t.add_input(unspent)
             while t.fee() < t.estimated_fee() and self.unspents:
                 unspent = self.unspents.pop(0)
                 picked_unspents.append(unspent)
-                t.add_input(TxInput(unspent))
+                t.add_input(unspent)
         if t.fee() < t.estimated_fee():
-            raise InsufficientFundsError(f'require {t.estimated_fee() + t.satoshi_total_out():} satoshi but only {t.satoshi_total_in()}')
+            self.unspents.extend(picked_unspents)
+            raise InsufficientFundsError(f'require {t.estimated_fee() + t.satoshi_total_out()} satoshi but only {t.satoshi_total_in()}')
         return t.add_change(leftover).sign(**self.kwargs, **kwargs)
 
     def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
