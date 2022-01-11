@@ -22,7 +22,7 @@ class ScriptType(metaclass=ABCMeta):
     def unlocking(cls, **kwargs) -> Script:
         """kwargs will pass the following at least
         {
-            'signatures': List[bytes] DER formated,
+            'signatures': List[bytes] DER formatted,
             'private_keys': List[bsvlib.keys.PrivateKey],
             'sighash': bsvlib.constants.SIGHASH,
         }

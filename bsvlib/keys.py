@@ -2,8 +2,8 @@ from secrets import randbelow
 from typing import Optional, Union, Callable
 
 from .base58 import base58check_encode
-from .constants import Chain, ADDRESS_CHAIN_PREFIX_DICT, WIF_CHAIN_PREFIX_DICT
-from .constants import NUMBER_BIT_LENGTH
+from .constants import Chain, CHAIN_ADDRESS_PREFIX_DICT, CHAIN_WIF_PREFIX_DICT
+from .constants import NUMBER_BYTE_LENGTH
 from .constants import PUBLIC_KEY_BYTE_LENGTH_LIST, PUBLIC_KEY_COMPRESSED_PREFIX_LIST, PUBLIC_KEY_UNCOMPRESSED_PREFIX
 from .constants import PUBLIC_KEY_COMPRESSED_BYTE_LENGTH, PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH, PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX_DICT
 from .curve import Point
@@ -54,8 +54,8 @@ class PublicKey:
         compressed = self.compressed if compressed is None else compressed
         x, y = self.point.x, self.point.y
         if compressed:
-            return PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX_DICT[y % 2 == 0] + int.to_bytes(x, length=NUMBER_BIT_LENGTH, byteorder='big')
-        return PUBLIC_KEY_UNCOMPRESSED_PREFIX + int.to_bytes(x, length=NUMBER_BIT_LENGTH, byteorder='big') + int.to_bytes(y, length=NUMBER_BIT_LENGTH, byteorder='big')
+            return PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX_DICT[y % 2 == 0] + int.to_bytes(x, NUMBER_BYTE_LENGTH, 'big')
+        return PUBLIC_KEY_UNCOMPRESSED_PREFIX + int.to_bytes(x, NUMBER_BYTE_LENGTH, 'big') + int.to_bytes(y, NUMBER_BYTE_LENGTH, 'big')
 
     def hex(self, compressed: Optional[bool] = None) -> str:
         return self.serialize(compressed).hex()
@@ -67,7 +67,7 @@ class PublicKey:
         return P2pkhScriptType.locking(self.hash160(compressed))
 
     def address(self, compressed: Optional[bool] = None, chain: Chain = Chain.MAIN) -> str:
-        return base58check_encode(ADDRESS_CHAIN_PREFIX_DICT.get(chain) + self.hash160(compressed))
+        return base58check_encode(CHAIN_ADDRESS_PREFIX_DICT.get(chain) + self.hash160(compressed))
 
     def __eq__(self, o: object) -> bool:
         if isinstance(o, PublicKey):
@@ -75,7 +75,7 @@ class PublicKey:
         return super().__eq__(o)
 
     def verify(self, signature: bytes, message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bool:
-        e = int.from_bytes(hasher(message), byteorder='big')
+        e = int.from_bytes(hasher(message), 'big')
         r, s = deserialize_signature(signature)
         w = modular_inverse(s, curve.n)
         u1 = (w * e) % curve.n
@@ -132,7 +132,7 @@ class PrivateKey:
         chain = chain or self.chain
         key_bytes = self.serialize()
         compressed_bytes = b'\x01' if compressed else b''
-        return base58check_encode(WIF_CHAIN_PREFIX_DICT.get(chain) + key_bytes + compressed_bytes)
+        return base58check_encode(CHAIN_WIF_PREFIX_DICT.get(chain) + key_bytes + compressed_bytes)
 
     def int(self) -> int:
         return self.key
@@ -141,7 +141,7 @@ class PrivateKey:
         return self.serialize().hex()
 
     def serialize(self) -> bytes:
-        return self.key.to_bytes(NUMBER_BIT_LENGTH, 'big')
+        return self.key.to_bytes(NUMBER_BYTE_LENGTH, 'big')
 
     def __eq__(self, o: object) -> bool:
         if isinstance(o, PrivateKey):
@@ -152,7 +152,7 @@ class PrivateKey:
         """
         :returns: ECDSA signature in DER format, compliant with low-s requirement in BIP-62 and BIP-66
         """
-        e = int.from_bytes(hasher(message), byteorder='big')
+        e = int.from_bytes(hasher(message), 'big')
         r, s = 0, 0
         while not r or not s:
             k = randbelow(curve.n)

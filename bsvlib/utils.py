@@ -1,7 +1,7 @@
 from typing import Tuple
 
 from .base58 import base58check_decode
-from .constants import Chain, ADDRESS_PREFIX_CHAIN_DICT, WIF_PREFIX_CHAIN_DICT, OP, NUMBER_BIT_LENGTH
+from .constants import Chain, ADDRESS_PREFIX_CHAIN_DICT, WIF_PREFIX_CHAIN_DICT, OP, NUMBER_BYTE_LENGTH
 from .curve import curve
 
 
@@ -85,11 +85,11 @@ def deserialize_signature(der: bytes) -> Tuple[int, int]:
         # r
         assert der[2] == 0x02
         r_len = int(der[3])
-        r = int.from_bytes(der[4: 4 + r_len], byteorder='big')
+        r = int.from_bytes(der[4: 4 + r_len], 'big')
         # s
         assert der[4 + r_len] == 0x02
         s_len = int(der[5 + r_len])
-        s = int.from_bytes(der[-s_len:], byteorder='big')
+        s = int.from_bytes(der[-s_len:], 'big')
         return r, s
     except Exception:
         raise ValueError(f'invalid DER encoded {der.hex()}')
@@ -103,12 +103,12 @@ def serialize_signature(r: int, s: int) -> bytes:
     if s > curve.n // 2:
         s = curve.n - s
     # r
-    r_bytes = r.to_bytes(NUMBER_BIT_LENGTH, byteorder='big').lstrip(b'\x00')
+    r_bytes = r.to_bytes(NUMBER_BYTE_LENGTH, 'big').lstrip(b'\x00')
     if r_bytes[0] & 0x80:
         r_bytes = b'\x00' + r_bytes
     serialized = bytes([2, len(r_bytes)]) + r_bytes
     # s
-    s_bytes = s.to_bytes(NUMBER_BIT_LENGTH, byteorder='big').lstrip(b'\x00')
+    s_bytes = s.to_bytes(NUMBER_BYTE_LENGTH, 'big').lstrip(b'\x00')
     if s_bytes[0] & 0x80:
         s_bytes = b'\x00' + s_bytes
     serialized += bytes([2, len(s_bytes)]) + s_bytes
