@@ -28,7 +28,7 @@ class SensibleQuery(Provider):
             unspents: List[Dict] = []
             for item in r.json()['data']:
                 unspent = {'txid': item['txid'], 'vout': item['vout'], 'satoshi': item['satoshi'], 'height': item['height']}
-                if item['scriptType'] == '21ac':
+                if item['scriptType'] in ['21ac', '41ac']:
                     unspent['script_type'] = P2pkScriptType()
                     unspent['locking_script'] = P2pkScriptType.locking(private_key.public_key().serialize())
                 unspent.update(kwargs)
