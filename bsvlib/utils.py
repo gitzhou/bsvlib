@@ -1,7 +1,8 @@
 from typing import Tuple
 
 from .base58 import base58check_decode
-from .constants import Chain, ADDRESS_PREFIX_CHAIN, WIF_PREFIX_CHAIN, OP
+from .constants import Chain, ADDRESS_PREFIX_CHAIN_DICT, WIF_PREFIX_CHAIN_DICT, OP, NUMBER_BIT_LENGTH
+from .curve import curve
 
 
 def unsigned_to_varint(num: int) -> bytes:
@@ -26,7 +27,7 @@ def decode_p2pkh_address(address: str) -> Tuple[bytes, Chain]:
     """
     decoded = base58check_decode(address)
     prefix = decoded[:1]
-    chain = ADDRESS_PREFIX_CHAIN.get(prefix)
+    chain = ADDRESS_PREFIX_CHAIN_DICT.get(prefix)
     if not chain:
         raise ValueError(f'unknown P2PKH address prefix {prefix.hex()}')
     return decoded[1:], chain
@@ -42,7 +43,7 @@ def decode_wif(wif: str) -> Tuple[bytes, bool, Chain]:
     """
     decoded = base58check_decode(wif)
     prefix = decoded[:1]
-    chain = WIF_PREFIX_CHAIN.get(prefix)
+    chain = WIF_PREFIX_CHAIN_DICT.get(prefix)
     if not chain:
         raise ValueError(f'unknown WIF prefix {prefix.hex()}')
     if len(wif) == 52 and decoded[-1] == 1:
@@ -72,3 +73,43 @@ def assemble_pushdata(pushdata: bytes) -> bytes:
     :returns: OP_PUSHDATA + pushdata
     """
     return get_pushdata_code(len(pushdata)) + pushdata
+
+
+def deserialize_signature(der: bytes) -> Tuple[int, int]:
+    """
+    deserialize ECDSA bitcoin DER formatted signature to (r, s)
+    """
+    try:
+        assert der[0] == 0x30
+        assert int(der[1]) == len(der) - 2
+        # r
+        assert der[2] == 0x02
+        r_len = int(der[3])
+        r = int.from_bytes(der[4: 4 + r_len], byteorder='big')
+        # s
+        assert der[4 + r_len] == 0x02
+        s_len = int(der[5 + r_len])
+        s = int.from_bytes(der[-s_len:], byteorder='big')
+        return r, s
+    except Exception:
+        raise ValueError(f'invalid DER encoded {der.hex()}')
+
+
+def serialize_signature(r: int, s: int) -> bytes:
+    """
+    serialize ECDSA signature (r, s) to bitcoin strict DER format
+    """
+    # enforce low s value
+    if s > curve.n // 2:
+        s = curve.n - s
+    # r
+    r_bytes = r.to_bytes(NUMBER_BIT_LENGTH, byteorder='big').lstrip(b'\x00')
+    if r_bytes[0] & 0x80:
+        r_bytes = b'\x00' + r_bytes
+    serialized = bytes([2, len(r_bytes)]) + r_bytes
+    # s
+    s_bytes = s.to_bytes(NUMBER_BIT_LENGTH, byteorder='big').lstrip(b'\x00')
+    if s_bytes[0] & 0x80:
+        s_bytes = b'\x00' + s_bytes
+    serialized += bytes([2, len(s_bytes)]) + s_bytes
+    return bytes([0x30, len(serialized)]) + serialized

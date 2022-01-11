@@ -27,7 +27,7 @@ def test_public_key():
     public_key_compressed = f'02{x}'
     public_key_uncompressed = f'04{x}{y}'
 
-    assert public_key.point() == point
+    assert public_key.point == point
     assert public_key.hex() == public_key_compressed
     assert public_key.hex(compressed=True) == public_key_compressed
     assert public_key.hex(compressed=False) == public_key_uncompressed

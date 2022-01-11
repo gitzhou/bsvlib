@@ -2,7 +2,7 @@ from abc import abstractmethod, ABCMeta
 from typing import Union, List
 
 from .script import Script
-from ..constants import PUBLIC_KEY_HASH_BYTE_LENGTH, OP, SIGHASH, PUBLIC_KEY_VALID_BYTE_LENGTH
+from ..constants import PUBLIC_KEY_HASH_BYTE_LENGTH, OP, SIGHASH, PUBLIC_KEY_BYTE_LENGTH_LIST
 from ..utils import address_to_public_key_hash, assemble_pushdata
 
 
@@ -130,7 +130,7 @@ class P2pkScriptType(ScriptType):
             pk: bytes = public_key
         else:
             raise TypeError("can't parse P2PK locking script")
-        assert len(pk) in PUBLIC_KEY_VALID_BYTE_LENGTH, f'invalid byte length of public key'
+        assert len(pk) in PUBLIC_KEY_BYTE_LENGTH_LIST, f'invalid byte length of public key'
         return Script(assemble_pushdata(pk) + OP.CHECKSIG)
 
     @classmethod

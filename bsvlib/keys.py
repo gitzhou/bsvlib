@@ -1,48 +1,61 @@
-from collections import namedtuple
+from secrets import randbelow
 from typing import Optional, Union, Callable
 
-from coincurve import PrivateKey as CcPrivateKey, PublicKey as CcPublicKey
-
 from .base58 import base58check_encode
-from .constants import Chain, ADDRESS_CHAIN_PREFIX, WIF_CHAIN_PREFIX, PUBLIC_KEY_COMPRESSED_BYTE_LENGTH
+from .constants import Chain, ADDRESS_CHAIN_PREFIX_DICT, WIF_CHAIN_PREFIX_DICT
+from .constants import NUMBER_BIT_LENGTH
+from .constants import PUBLIC_KEY_BYTE_LENGTH_LIST, PUBLIC_KEY_COMPRESSED_PREFIX_LIST, PUBLIC_KEY_UNCOMPRESSED_PREFIX
+from .constants import PUBLIC_KEY_COMPRESSED_BYTE_LENGTH, PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH, PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX_DICT
+from .curve import Point
+from .curve import curve, get_y, modular_inverse, add, multiply
 from .hash import hash160, hash256
 from .script.script import Script
 from .script.type import P2pkhScriptType
-from .utils import decode_wif
-
-Point = namedtuple('Point', ('x', 'y'))
+from .utils import decode_wif, deserialize_signature, serialize_signature
 
 
 class PublicKey:
 
-    def __init__(self, public_key: Union[str, bytes, Point, CcPublicKey]):
+    def __init__(self, public_key: Union[str, bytes, Point]):
         """
-        create public key from hex string, bytes, curve point or CoinCurve public key
+        create public key from serialized hex string or bytes, or curve point
         """
-        self.compressed = True  # default compressed format public key
-        if isinstance(public_key, str):
-            # from serialized public key in hex string
-            self.key = CcPublicKey(bytes.fromhex(public_key))
-            self.compressed = True if len(public_key) == PUBLIC_KEY_COMPRESSED_BYTE_LENGTH * 2 else False
-        elif isinstance(public_key, bytes):
-            # from serialized public key in bytes
-            self.key = CcPublicKey(public_key)
-            self.compressed = True if len(public_key) == PUBLIC_KEY_COMPRESSED_BYTE_LENGTH else False
-        elif isinstance(public_key, Point):
-            # from curve point
-            self.key = CcPublicKey.from_point(public_key.x, public_key.y)
-        elif isinstance(public_key, CcPublicKey):
-            # from CoinCurve public key
-            self.key = public_key
-        else:
-            raise TypeError('unsupported public key type')
+        self.compressed: bool = True  # default compressed format public key
 
-    def point(self) -> Point:
-        return self.key.point()
+        if isinstance(public_key, Point):
+            # from curve point
+            self.point: Point = public_key
+        else:
+            if isinstance(public_key, str):
+                # from serialized public key in hex string
+                pk: bytes = bytes.fromhex(public_key)
+            elif isinstance(public_key, bytes):
+                # from serialized public key in bytes
+                pk: bytes = public_key
+            else:
+                raise TypeError('unsupported public key type')
+            # here we have serialized public key
+            assert len(pk) in PUBLIC_KEY_BYTE_LENGTH_LIST, 'invalid byte length of public key'
+            prefix: bytes = pk[:1]
+            if prefix in PUBLIC_KEY_COMPRESSED_PREFIX_LIST:
+                assert len(pk) == PUBLIC_KEY_COMPRESSED_BYTE_LENGTH, 'invalid byte length of compressed public key'
+                x: int = int.from_bytes(pk[1:], 'big')
+                self.point: Point = Point(x, get_y(x, pk[0] % 2 == 0))
+            elif prefix == PUBLIC_KEY_UNCOMPRESSED_PREFIX:
+                assert len(pk) == PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH, 'invalid byte length of uncompressed public key'
+                self.compressed = False
+                self.point: Point = Point(int.from_bytes(pk[1:33], 'big'), int.from_bytes(pk[33:], 'big'))
+            else:
+                raise ValueError('invalid public key prefix')
+
+        assert self.point, 'bad public key'
 
     def serialize(self, compressed: Optional[bool] = None) -> bytes:
         compressed = self.compressed if compressed is None else compressed
-        return self.key.format(compressed)
+        x, y = self.point.x, self.point.y
+        if compressed:
+            return PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX_DICT[y % 2 == 0] + int.to_bytes(x, length=NUMBER_BIT_LENGTH, byteorder='big')
+        return PUBLIC_KEY_UNCOMPRESSED_PREFIX + int.to_bytes(x, length=NUMBER_BIT_LENGTH, byteorder='big') + int.to_bytes(y, length=NUMBER_BIT_LENGTH, byteorder='big')
 
     def hex(self, compressed: Optional[bool] = None) -> str:
         return self.serialize(compressed).hex()
@@ -54,47 +67,54 @@ class PublicKey:
         return P2pkhScriptType.locking(self.hash160(compressed))
 
     def address(self, compressed: Optional[bool] = None, chain: Chain = Chain.MAIN) -> str:
-        return base58check_encode(ADDRESS_CHAIN_PREFIX.get(chain) + self.hash160(compressed))
+        return base58check_encode(ADDRESS_CHAIN_PREFIX_DICT.get(chain) + self.hash160(compressed))
 
     def __eq__(self, o: object) -> bool:
         if isinstance(o, PublicKey):
-            return self.key == o.key
+            return self.point == o.point
         return super().__eq__(o)
 
     def verify(self, signature: bytes, message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bool:
-        return self.key.verify(signature=signature, message=message, hasher=hasher)
+        e = int.from_bytes(hasher(message), byteorder='big')
+        r, s = deserialize_signature(signature)
+        w = modular_inverse(s, curve.n)
+        u1 = (w * e) % curve.n
+        u2 = (w * r) % curve.n
+        x, _ = add(multiply(u1, curve.g), multiply(u2, self.point))
+        return r == (x % curve.n)
 
 
 class PrivateKey:
 
-    def __init__(self, private_key: Union[str, int, bytes, CcPrivateKey, None] = None, chain: Optional[Chain] = None):
+    def __init__(self, private_key: Union[str, int, bytes, None] = None, chain: Optional[Chain] = None):
         """
-        create private key from WIF (str), int, bytes, or CoinCurve private key
+        create private key from WIF (str), or int, or bytes
         random a new private key if None
         """
         self.chain = chain or Chain.MAIN
         self.compressed = True  # default compressed wif
         if private_key is None:
-            self.key = CcPrivateKey()
+            k = randbelow(curve.n)
+            while not k:
+                k = randbelow(curve.n)
         else:
             if isinstance(private_key, str):
                 # from wif
                 private_key_bytes, self.compressed, self.chain = decode_wif(private_key)
-                self.key = CcPrivateKey(private_key_bytes)
+                k = int.from_bytes(private_key_bytes, 'big')
             elif isinstance(private_key, int):
                 # from private key as int
-                self.key = CcPrivateKey.from_int(private_key)
+                k = private_key
             elif isinstance(private_key, bytes):
                 # from private key integer in bytes
-                self.key = CcPrivateKey.from_hex(private_key.hex())
-            elif isinstance(private_key, CcPrivateKey):
-                # from CoinCurve private key
-                self.key = private_key
+                k = int.from_bytes(private_key, 'big')
             else:
                 raise TypeError('unsupported private key type')
+        self.key: int = k
+        assert 0 < self.key < curve.n, 'bad private key'
 
     def public_key(self) -> PublicKey:
-        pk = PublicKey(self.key.public_key)
+        pk = PublicKey(multiply(self.key, curve.g))
         pk.compressed = self.compressed
         return pk
 
@@ -110,18 +130,18 @@ class PrivateKey:
     def wif(self, compressed: Optional[bool] = None, chain: Optional[Chain] = None) -> str:
         compressed = self.compressed if compressed is None else compressed
         chain = chain or self.chain
-        key_bytes = self.key.to_int().to_bytes(32, 'big')
+        key_bytes = self.serialize()
         compressed_bytes = b'\x01' if compressed else b''
-        return base58check_encode(WIF_CHAIN_PREFIX.get(chain) + key_bytes + compressed_bytes)
+        return base58check_encode(WIF_CHAIN_PREFIX_DICT.get(chain) + key_bytes + compressed_bytes)
 
     def int(self) -> int:
-        return self.key.to_int()
+        return self.key
 
     def hex(self) -> str:
-        return self.key.to_hex()
+        return self.serialize().hex()
 
     def serialize(self) -> bytes:
-        return bytes.fromhex(self.hex())
+        return self.key.to_bytes(NUMBER_BIT_LENGTH, 'big')
 
     def __eq__(self, o: object) -> bool:
         if isinstance(o, PrivateKey):
@@ -132,7 +152,16 @@ class PrivateKey:
         """
         :returns: ECDSA signature in DER format, compliant with low-s requirement in BIP-62 and BIP-66
         """
-        return self.key.sign(message=message, hasher=hasher)
+        e = int.from_bytes(hasher(message), byteorder='big')
+        r, s = 0, 0
+        while not r or not s:
+            k = randbelow(curve.n)
+            while not k:
+                k = randbelow(curve.n)
+            k_x, _ = multiply(k, curve.g)
+            r = k_x % curve.n
+            s = ((e + r * self.key) * modular_inverse(k, curve.n)) % curve.n
+        return serialize_signature(r, s)
 
     def verify(self, signature: serialize, message: serialize, hasher: Callable[[serialize], serialize] = hash256) -> bool:
         return self.public_key().verify(signature=signature, message=message, hasher=hasher)

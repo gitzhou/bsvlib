@@ -2,7 +2,7 @@ import pytest
 
 from bsvlib.constants import Chain
 from bsvlib.utils import decode_p2pkh_address, decode_wif
-from bsvlib.utils import unsigned_to_varint
+from bsvlib.utils import unsigned_to_varint, deserialize_signature, serialize_signature
 
 
 def test_unsigned_to_varint():
@@ -41,3 +41,11 @@ def test_decode_wif():
     assert decode_wif(wif_uncompressed_main) == (private_key_bytes, False, Chain.MAIN)
     assert decode_wif(wif_compressed_test) == (private_key_bytes, True, Chain.TEST)
     assert decode_wif(wif_uncompressed_test) == (private_key_bytes, False, Chain.TEST)
+
+
+def test_signature_serialization():
+    der: str = '3045022100fd5647a062d42cdde975ad4796cefd6b5613e731c08e0fb6907f757a60f44b020220350fee392713423ebfcd8026ea29cc95917d823392f07cd6c80f46712650388e'
+    r = 114587593887127314608220924841831336233967095853165151956820984900193959037698
+    s = 24000727837347392504013031837120627225728348681623127776947626422811445180558
+    assert deserialize_signature(bytes.fromhex(der)) == (r, s)
+    assert serialize_signature(r, s).hex() == der

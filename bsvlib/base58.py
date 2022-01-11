@@ -1,7 +1,9 @@
+from typing import Literal
+
 from .hash import hash256
 
 
-def unsigned_to_bytes(num: int, byteorder: str = 'big') -> bytes:
+def unsigned_to_bytes(num: int, byteorder: Literal['big', 'little'] = 'big') -> bytes:
     """
     convert an unsigned int to the least number of bytes as possible.
     """
