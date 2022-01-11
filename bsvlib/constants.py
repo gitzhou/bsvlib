@@ -9,6 +9,8 @@ TRANSACTION_FEE_RATE: float = float(os.getenv('BSVLIB_TRANSACTION_FEE_RATE') or 
 
 P2PKH_DUST_LIMIT: int = int(os.getenv('BSVLIB_P2PKH_DUST_LIMIT') or 135)
 
+THREAD_POOL_MAX_EXECUTORS: int = int(os.getenv('BSVLIB_THREAD_POOL_MAX_EXECUTORS') or 10)
+
 
 class Chain(str, Enum):
     MAIN = 'main'

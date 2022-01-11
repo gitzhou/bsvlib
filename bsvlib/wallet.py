@@ -1,6 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
 from typing import Optional, List, Tuple, Union, Dict, Any
 
-from .constants import Chain
+from .constants import Chain, THREAD_POOL_MAX_EXECUTORS
 from .keys import PrivateKey
 from .service.provider import Provider
 from .service.service import Service
@@ -10,6 +12,14 @@ from .transaction.unspent import Unspent
 
 class InsufficientFundsError(ValueError):
     pass
+
+
+def get_unspents_wrapper(d: Dict) -> List['Unspent']:
+    return Unspent.get_unspents(**d)
+
+
+def get_balance_wrapper(chain: Chain, provider: Provider, d: Dict) -> int:
+    return Service(chain, provider).get_balance(**d)
 
 
 class Wallet:
@@ -45,13 +55,17 @@ class Wallet:
     def get_unspents(self, refresh: bool = False, **kwargs) -> List[Unspent]:
         if refresh:
             self.unspents = []
-            for key in self.keys:
-                self.unspents.extend(Unspent.get_unspents(chain=self.chain, provider=self.provider, private_keys=[key], **self.kwargs, **kwargs))
+            with ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_EXECUTORS) as executor:
+                args = [dict(chain=self.chain, provider=self.provider, private_keys=[key], **self.kwargs, **kwargs) for key in self.keys]
+                for r in executor.map(get_unspents_wrapper, args):
+                    self.unspents.extend(r)
         return self.unspents
 
     def get_balance(self, refresh: bool = False, **kwargs) -> int:
         if refresh:
-            return sum([Service(self.chain, self.provider).get_balance(private_keys=[key], **self.kwargs, **kwargs) for key in self.keys])
+            with ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_EXECUTORS) as executor:
+                args = [dict(private_keys=[key], **self.kwargs, **kwargs) for key in self.keys]
+                return sum([r for r in executor.map(get_balance_wrapper, repeat(self.chain), repeat(self.provider), args)])
         return sum([unspent.satoshi for unspent in self.unspents])
 
     def create_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
