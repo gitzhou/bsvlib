@@ -73,7 +73,7 @@ class P2pkhScriptType(ScriptType):
         else:
             raise TypeError("can't parse P2PKH locking script")
         assert len(pkh) == PUBLIC_KEY_HASH_BYTE_LENGTH, f'invalid byte length of public key hash'
-        return Script(OP.DUP + OP.HASH160 + assemble_pushdata(pkh) + OP.EQUALVERIFY + OP.CHECKSIG)
+        return Script(OP.OP_DUP + OP.OP_HASH160 + assemble_pushdata(pkh) + OP.OP_EQUALVERIFY + OP.OP_CHECKSIG)
 
     @classmethod
     def unlocking(cls, **kwargs) -> Script:
@@ -94,7 +94,7 @@ class OpReturnScriptType(ScriptType):
 
     @classmethod
     def locking(cls, pushdatas: List[Union[str, bytes]]) -> Script:
-        script: bytes = OP.FALSE + OP.RETURN
+        script: bytes = OP.OP_FALSE + OP.OP_RETURN
         for pushdata in pushdatas:
             if isinstance(pushdata, str):
                 pushdata_bytes: bytes = pushdata.encode('utf-8')
@@ -131,7 +131,7 @@ class P2pkScriptType(ScriptType):
         else:
             raise TypeError("can't parse P2PK locking script")
         assert len(pk) in PUBLIC_KEY_BYTE_LENGTH_LIST, f'invalid byte length of public key'
-        return Script(assemble_pushdata(pk) + OP.CHECKSIG)
+        return Script(assemble_pushdata(pk) + OP.OP_CHECKSIG)
 
     @classmethod
     def unlocking(cls, **kwargs) -> Script:

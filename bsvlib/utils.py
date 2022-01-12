@@ -59,13 +59,13 @@ def get_pushdata_code(byte_length: int) -> bytes:
         return byte_length.to_bytes(1, 'little')
     elif byte_length <= 0xff:
         # OP_PUSHDATA1
-        return OP.PUSHDATA1 + byte_length.to_bytes(1, 'little')
+        return OP.OP_PUSHDATA1 + byte_length.to_bytes(1, 'little')
     elif byte_length <= 0xffff:
         # OP_PUSHDATA2
-        return OP.PUSHDATA2 + byte_length.to_bytes(2, 'little')
+        return OP.OP_PUSHDATA2 + byte_length.to_bytes(2, 'little')
     else:
         # OP_PUSHDATA4
-        return OP.PUSHDATA4 + byte_length.to_bytes(4, 'little')
+        return OP.OP_PUSHDATA4 + byte_length.to_bytes(4, 'little')
 
 
 def assemble_pushdata(pushdata: bytes) -> bytes:
