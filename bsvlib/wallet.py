@@ -66,7 +66,8 @@ class Wallet:
 
     def create_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
                            fee_rate: Optional[float] = None, unspents: Optional[List[Unspent]] = None,
-                           combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None, **kwargs) -> Transaction:
+                           combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None,
+                           change: bool = True, sign: bool = True, **kwargs) -> Transaction:
         """create a signed transaction
         :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address
@@ -74,6 +75,8 @@ class Wallet:
         :param unspents: list of unspents, will refresh from service if None
         :param combine: use all available unspents if True
         :param pushdatas: list of OP_RETURN pushdata
+        :param change: automatically add a P2PKH change output if True
+        :param sign: sign the transaction if True
         :param kwargs: passing to get unspents and sign
         """
         self.unspents = unspents or self.get_unspents(refresh=True, **self.kwargs, **kwargs)
@@ -102,7 +105,11 @@ class Wallet:
         if t.fee() < t.estimated_fee():
             self.unspents.extend(picked_unspents)
             raise InsufficientFundsError(f'require {t.estimated_fee() + t.satoshi_total_out()} satoshi but only {t.satoshi_total_in()}')
-        return t.add_change(leftover).sign(**self.kwargs, **kwargs)
+        if change:
+            t.add_change(leftover)
+        if sign:
+            t.sign(**self.kwargs, **kwargs)
+        return t
 
     def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
                          unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None, **kwargs) -> Optional[str]:
@@ -116,4 +123,4 @@ class Wallet:
         :param kwargs: passing to get unspents and sign
         :returns: txid if successfully otherwise None
         """
-        return self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas, **kwargs).broadcast()
+        return self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas, True, True, **kwargs).broadcast()

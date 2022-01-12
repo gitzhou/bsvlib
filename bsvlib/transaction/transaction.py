@@ -22,7 +22,7 @@ class InsufficientFundsError(ValueError):
 class TxInput:
 
     def __init__(self, unspent: Unspent, private_keys: Optional[List[PrivateKey]] = None, unlocking_script: Optional[Script] = None,
-                 sequence: int = TRANSACTION_SEQUENCE, sighash: SIGHASH = SIGHASH.ALL):
+                 sequence: int = TRANSACTION_SEQUENCE, sighash: SIGHASH = SIGHASH.ALL_FORKID):
         self.txid: str = unspent.txid
         self.vout: int = unspent.vout
         self.satoshi: int = unspent.satoshi
@@ -171,17 +171,35 @@ class Transaction:
         """
         :returns: the digests of unsigned transaction
         """
-        digest = []
-        for tx_input in self.tx_inputs:
-            if tx_input.sighash == SIGHASH.ALL:
-                hash_prevouts = hash256(b''.join([bytes.fromhex(tx_in.txid)[::-1] + tx_in.vout.to_bytes(4, 'little') for tx_in in self.tx_inputs]))
-                hash_sequence = hash256(b''.join([tx_in.sequence.to_bytes(4, 'little') for tx_in in self.tx_inputs]))
-                hash_outputs = hash256(b''.join([tx_out.serialize() for tx_out in self.tx_outputs]))
+        _hash_prevouts = hash256(b''.join([bytes.fromhex(tx_input.txid)[::-1] + tx_input.vout.to_bytes(4, 'little') for tx_input in self.tx_inputs]))
+        _hash_sequence = hash256(b''.join([tx_input.sequence.to_bytes(4, 'little') for tx_input in self.tx_inputs]))
+        _hash_outputs = hash256(b''.join([tx_output.serialize() for tx_output in self.tx_outputs]))
+        digests = []
+        for i in range(len(self.tx_inputs)):
+            sighash = self.tx_inputs[i].sighash
+            # hash previous outs
+            if not sighash & SIGHASH.ANYONECANPAY:
+                # if anyone can pay is not set
+                hash_prevouts = _hash_prevouts
             else:
-                # TODO support other sighash
-                raise ValueError(f'unsupported sighash {tx_input.sighash}')
-            digest.append(self._digest(tx_input, hash_prevouts, hash_sequence, hash_outputs))
-        return digest
+                hash_prevouts = b'\x00' * 32
+            # hash sequence
+            if not sighash & SIGHASH.ANYONECANPAY and sighash & 0x1f != SIGHASH.SINGLE and sighash & 0x1f != SIGHASH.NONE:
+                # if none of anyone can pay, single, none is set
+                hash_sequence = _hash_sequence
+            else:
+                hash_sequence = b'\x00' * 32
+            # hash outputs
+            if sighash & 0x1f != SIGHASH.SINGLE and sighash & 0x1f != SIGHASH.NONE:
+                # if neither single nor none
+                hash_outputs = _hash_outputs
+            elif sighash & 0x1f == SIGHASH.SINGLE and i < len(self.tx_outputs):
+                # if single and the input index is smaller than the number of outputs
+                hash_outputs = hash256(self.tx_outputs[i].serialize())
+            else:
+                hash_outputs = b'\x00' * 32
+            digests.append(self._digest(self.tx_inputs[i], hash_prevouts, hash_sequence, hash_outputs))
+        return digests
 
     def digest(self, index: int) -> bytes:
         """
@@ -194,12 +212,12 @@ class Transaction:
         """
         sign all inputs according to their script type
         """
-        if self.fee() < self.estimated_fee():
-            raise InsufficientFundsError(f'require {self.estimated_fee() + self.satoshi_total_out()} satoshi but only {self.satoshi_total_in()}')
         digests = self.digests()
         for i in range(len(self.tx_inputs)):
             tx_input = self.tx_inputs[i]
-            if not tx_input.unlocking_script:
+            # will ONLY sign inputs without unlocking script by default
+            # set no_bypass to sign all the inputs even if their unlocking script is ready
+            if not tx_input.unlocking_script or kwargs.get('no_bypass'):
                 signatures: List[bytes] = [private_key.sign(digests[i]) for private_key in tx_input.private_keys]
                 payload = {'signatures': signatures, 'private_keys': tx_input.private_keys, 'sighash': tx_input.sighash}
                 tx_input.unlocking_script = tx_input.script_type.unlocking(**payload, **self.kwargs, **kwargs)
@@ -266,4 +284,6 @@ class Transaction:
         return self
 
     def broadcast(self) -> Optional[str]:
+        if self.fee() < self.estimated_fee():
+            raise InsufficientFundsError(f'require {self.estimated_fee() + self.satoshi_total_out()} satoshi but only {self.satoshi_total_in()}')
         return Service(self.chain, self.provider).broadcast(self.hex())
