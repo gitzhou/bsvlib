@@ -5,6 +5,7 @@ from typing import Optional, List, Dict
 import requests
 
 from .provider import Provider
+from ..constants import HTTP_REQUEST_TIMEOUT
 from ..keys import PrivateKey
 from ..script.type import P2pkScriptType
 
@@ -14,7 +15,7 @@ class SensibleQuery(Provider):
     def __init__(self):
         self.url: str = 'https://api.sensiblequery.com'
         self.headers: Dict = {'Content-Type': 'application/json', 'Accept': 'application/json', }
-        self.timeout: int = 30
+        self.timeout: int = HTTP_REQUEST_TIMEOUT
 
     def get_unspents(self, **kwargs) -> List[Dict]:
         """

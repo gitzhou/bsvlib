@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 import requests
 
 from .provider import Provider
-from ..constants import Chain
+from ..constants import Chain, HTTP_REQUEST_TIMEOUT
 from ..keys import PrivateKey
 
 
@@ -15,7 +15,7 @@ class WhatsOnChain(Provider):
         self.chain: Chain = chain
         self.url: str = 'https://api.whatsonchain.com/v1/bsv'
         self.headers: Dict = {'Content-Type': 'application/json', 'Accept': 'application/json', }
-        self.timeout: int = 30
+        self.timeout: int = HTTP_REQUEST_TIMEOUT
 
     def get_unspents(self, **kwargs) -> List[Dict]:
         """
