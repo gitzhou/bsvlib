@@ -8,4 +8,4 @@ t.add_inputs([TxInput(unspent, sighash=SIGHASH.NONE_FORKID) for unspent in unspe
 t.sign()
 
 # it's good to add any outputs here, no need to sign, can broadcast directly
-print(t.add_change('1AfxgwYJrBgriZDLryfyKuSdBsi59jeBX9').broadcast())
+print(t.add_change().broadcast())

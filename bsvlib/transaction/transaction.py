@@ -208,16 +208,15 @@ class Transaction:
         assert 0 <= index < len(self.tx_inputs), f'index out of range [0, {len(self.tx_inputs)})'
         return self.digests()[index]
 
-    def sign(self, **kwargs) -> 'Transaction':
+    def sign(self, bypass: bool = True, **kwargs) -> 'Transaction':
         """
+        :bypass: if True then ONLY sign inputs which unlocking script is empty, otherwise sign all the inputs
         sign all inputs according to their script type
         """
         digests = self.digests()
         for i in range(len(self.tx_inputs)):
             tx_input = self.tx_inputs[i]
-            # will ONLY sign inputs without unlocking script by default
-            # set no_bypass to sign all the inputs even if their unlocking script is ready
-            if not tx_input.unlocking_script or kwargs.get('no_bypass'):
+            if not tx_input.unlocking_script or not bypass:
                 signatures: List[bytes] = [private_key.sign(digests[i]) for private_key in tx_input.private_keys]
                 payload = {'signatures': signatures, 'private_keys': tx_input.private_keys, 'sighash': tx_input.sighash}
                 tx_input.unlocking_script = tx_input.script_type.unlocking(**payload, **self.kwargs, **kwargs)
