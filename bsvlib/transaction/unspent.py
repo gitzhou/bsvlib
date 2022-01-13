@@ -30,7 +30,7 @@ class Unspent:
         # if locking script is not set then parse from address, otherwise check locking script only
         self.locking_script: Script = kwargs.get('locking_script') or (P2pkhScriptType.locking(self.address) if self.address else None)
         # validate
-        assert self.txid and self.vout is not None and self.satoshi is not None and self.locking_script, f'bad unspent'
+        assert self.txid and self.vout is not None and self.satoshi is not None and self.locking_script, 'bad unspent'
 
     def __repr__(self) -> str:
         return f'<Unspent outpoint={self.txid}:{self.vout} satoshi={self.satoshi} script={self.locking_script}>'

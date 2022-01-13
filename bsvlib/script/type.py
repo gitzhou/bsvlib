@@ -45,7 +45,7 @@ class ScriptType(metaclass=ABCMeta):
 class UnknownScriptType(ScriptType):
 
     def __repr__(self) -> str:
-        return f'<ScriptType:Unknown>'
+        return '<ScriptType:Unknown>'
 
     @classmethod
     def unlocking(cls, **kwargs) -> Script:
@@ -59,7 +59,7 @@ class UnknownScriptType(ScriptType):
 class P2pkhScriptType(ScriptType):
 
     def __repr__(self) -> str:
-        return f'<ScriptType:P2PKH>'
+        return '<ScriptType:P2PKH>'
 
     @classmethod
     def locking(cls, value: Union[str, bytes]) -> Script:
@@ -72,7 +72,7 @@ class P2pkhScriptType(ScriptType):
             pkh: bytes = value
         else:
             raise TypeError("can't parse P2PKH locking script")
-        assert len(pkh) == PUBLIC_KEY_HASH_BYTE_LENGTH, f'invalid byte length of public key hash'
+        assert len(pkh) == PUBLIC_KEY_HASH_BYTE_LENGTH, 'invalid byte length of public key hash'
         return Script(OP.OP_DUP + OP.OP_HASH160 + assemble_pushdata(pkh) + OP.OP_EQUALVERIFY + OP.OP_CHECKSIG)
 
     @classmethod
@@ -90,7 +90,7 @@ class P2pkhScriptType(ScriptType):
 class OpReturnScriptType(ScriptType):
 
     def __repr__(self) -> str:
-        return f'<ScriptType:OP_RETURN>'
+        return '<ScriptType:OP_RETURN>'
 
     @classmethod
     def locking(cls, pushdatas: List[Union[str, bytes]]) -> Script:
@@ -117,7 +117,7 @@ class OpReturnScriptType(ScriptType):
 class P2pkScriptType(ScriptType):
 
     def __repr__(self) -> str:
-        return f'<ScriptType:P2PK>'
+        return '<ScriptType:P2PK>'
 
     @classmethod
     def locking(cls, public_key: Union[str, bytes]) -> Script:
@@ -130,7 +130,7 @@ class P2pkScriptType(ScriptType):
             pk: bytes = public_key
         else:
             raise TypeError("can't parse P2PK locking script")
-        assert len(pk) in PUBLIC_KEY_BYTE_LENGTH_LIST, f'invalid byte length of public key'
+        assert len(pk) in PUBLIC_KEY_BYTE_LENGTH_LIST, 'invalid byte length of public key'
         return Script(assemble_pushdata(pk) + OP.OP_CHECKSIG)
 
     @classmethod
