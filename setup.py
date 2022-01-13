@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open('bsvlib/__init__.py', 'r') as f:
     for line in f:
@@ -8,4 +8,5 @@ with open('bsvlib/__init__.py', 'r') as f:
 
 setup(
     version=version,
+    packages=find_packages(exclude=('tests',)),
 )

@@ -1,7 +1,7 @@
 .PHONY: build upload_test
 
 build:
-	@rm -rf dist/*
+	@rm -rf dist/* *.egg-info/*
 	@python3 -m build
 
 upload_test:
