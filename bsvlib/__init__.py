@@ -1,4 +1,4 @@
 from .transaction import TxInput, TxOutput, Transaction, Unspent, InsufficientFundsError
 from .wallet import Wallet
 
-__version__ = '0.0.4'
+__version__ = '0.1.0'
