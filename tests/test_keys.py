@@ -5,7 +5,7 @@ import ecdsa
 from bsvlib.constants import Chain
 from bsvlib.hash import sha256
 from bsvlib.keys import Point, PrivateKey, PublicKey
-from test_transaction import digest1, digest2, digest3
+from .test_transaction import digest1, digest2, digest3
 
 private_key_hex = 'f97c89aaacf0cd2e47ddbacc97dae1f88bec49106ac37716c451dcdd008a4b62'
 private_key_bytes = bytes.fromhex(private_key_hex)
