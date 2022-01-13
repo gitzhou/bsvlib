@@ -1,6 +1,8 @@
 # bsvlib
 
 [![Python package](https://github.com/gitzhou/bsvlib/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/gitzhou/bsvlib/actions/workflows/python-package.yml)
+[![PyPI version](https://img.shields.io/pypi/v/bsvlib.svg?style=flat-square)](https://pypi.org/project/bsvlib)
+[![Python versions](https://img.shields.io/pypi/pyversions/bsvlib.svg?style=flat-square)](https://pypi.org/project/bsvlib)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://en.wikipedia.org/wiki/MIT_License)
 
 A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
