@@ -1,6 +1,7 @@
 # bsvlib
 
-[![Python package](https://github.com/gitzhou/bsvlib/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/gitzhou/bsvlib/actions/workflows/python-package.yml)
+[![workflow](https://github.com/gitzhou/bsvlib/actions/workflows/workflow.yml/badge.svg)](https://github.com/gitzhou/bsvlib/actions/workflows/workflow.yml)
+[![codecov](https://codecov.io/gh/gitzhou/bsvlib/branch/master/graph/badge.svg?token=ZD1AS8JG9W)](https://codecov.io/gh/gitzhou/bsvlib)
 [![PyPI version](https://img.shields.io/pypi/v/bsvlib.svg?style=flat-square)](https://pypi.org/project/bsvlib)
 [![Python versions](https://img.shields.io/pypi/pyversions/bsvlib.svg?style=flat-square)](https://pypi.org/project/bsvlib)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://en.wikipedia.org/wiki/MIT_License)
