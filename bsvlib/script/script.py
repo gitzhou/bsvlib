@@ -37,7 +37,7 @@ class Script:
     def __eq__(self, o: object) -> bool:
         if isinstance(o, Script):
             return self.script == o.script
-        return super().__eq__(o)
+        return super().__eq__(o)  # pragma: no cover
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         return self.script.hex()

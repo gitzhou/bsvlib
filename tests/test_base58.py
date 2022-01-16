@@ -1,6 +1,6 @@
 import pytest
 
-from bsvlib.base58 import unsigned_to_bytes, base58check_encode, base58check_decode
+from bsvlib.base58 import unsigned_to_bytes, base58check_encode, base58check_decode, b58_encode, b58_decode
 
 BITCOIN_ADDRESS = '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'
 PUBLIC_KEY_HASH = bytes.fromhex('62e907b15cbf27d5425399ebf6f0fb50ebb88f18')
@@ -16,6 +16,14 @@ def test_unsigned_to_bytes():
     assert unsigned_to_bytes(num=256, byteorder='big') == bytes.fromhex('0100')
 
     assert unsigned_to_bytes(num=256, byteorder='little') == bytes.fromhex('0001')
+
+
+def test_base58():
+    assert b58_encode(b'\x00') == '1'
+    assert b58_encode(b'\x00\x00') == '11'
+
+    assert b58_decode('1') == b'\x00\x00'
+    assert b58_decode('111') == b'\x00\x00\x00\x00'
 
 
 def test_base58check_encode():

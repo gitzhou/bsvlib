@@ -32,7 +32,7 @@ class Unspent:
         # validate
         assert self.txid and self.vout is not None and self.satoshi is not None and self.locking_script, 'bad unspent'
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         return f'<Unspent outpoint={self.txid}:{self.vout} satoshi={self.satoshi} script={self.locking_script}>'
 
     @classmethod

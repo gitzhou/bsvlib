@@ -1,4 +1,4 @@
-from bsvlib.curve import modular_inverse, multiply, curve, Point, get_y
+from bsvlib.curve import modular_inverse, multiply, curve, Point, get_y, negative, add
 
 
 def test_modular_inverse():
@@ -6,9 +6,20 @@ def test_modular_inverse():
 
 
 def test_point_operation():
-    k = 0xf97c89aaacf0cd2e47ddbacc97dae1f88bec49106ac37716c451dcdd008a4b62
-    p = multiply(k, curve.g)
     x = 0xe46dcd7991e5a4bd642739249b0158312e1aee56a60fd1bf622172ffe65bd789
     y = 0x97693d32c540ac253de7a3dc73f7e4ba7b38d2dc1ecc8e07920b496fb107d6b2
-    assert p == Point(x, y)
+    p = Point(x, y)
+    k = 0xf97c89aaacf0cd2e47ddbacc97dae1f88bec49106ac37716c451dcdd008a4b62
+
     assert y == get_y(x, y % 2 == 0)
+
+    assert negative(None) is None
+
+    assert add(p, None) == p
+    assert add(None, p) == p
+    assert add(p, negative(p)) is None
+
+    assert multiply(k, curve.g) == p
+    assert multiply(0, curve.g) is None
+    assert multiply(1, None) is None
+    assert multiply(-k, negative(curve.g)) == Point(x, y)

@@ -67,7 +67,7 @@ class Wallet:
     def create_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
                            fee_rate: Optional[float] = None, unspents: Optional[List[Unspent]] = None,
                            combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None,
-                           change: bool = True, sign: bool = True, **kwargs) -> Transaction:
+                           change: bool = True, sign: bool = True, **kwargs) -> Transaction:  # pragma: no cover
         """create a signed transaction
         :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address
@@ -111,8 +111,10 @@ class Wallet:
             t.sign(**self.kwargs, **kwargs)
         return t
 
-    def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None, fee_rate: Optional[float] = None,
-                         unspents: Optional[List[Unspent]] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None, **kwargs) -> Optional[str]:
+    def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
+                         fee_rate: Optional[float] = None, unspents: Optional[List[Unspent]] = None,
+                         combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None,
+                         **kwargs) -> Optional[str]:  # pragma: no cover
         """send a transaction
         :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address

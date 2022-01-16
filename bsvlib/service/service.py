@@ -33,4 +33,4 @@ class Service:
         """
         :returns: txid if broadcast successfully otherwise None
         """
-        return self.provider.broadcast(raw)
+        return self.provider.broadcast(raw)  # pragma: no cover

@@ -6,7 +6,6 @@ import requests
 
 from .provider import Provider
 from ..constants import Chain, HTTP_REQUEST_TIMEOUT
-from ..keys import PrivateKey
 
 
 class WhatsOnChain(Provider):
@@ -22,8 +21,8 @@ class WhatsOnChain(Provider):
         only P2PKH unspents
         """
         with suppress(Exception):
-            private_key: PrivateKey = kwargs.get('private_keys')[0]
-            r = requests.get(f'{self.url}/{self.chain}/address/{private_key.address()}/unspent', headers=self.headers, timeout=self.timeout)
+            address: str = kwargs.get('address') or kwargs.get('private_keys')[0].address()
+            r = requests.get(f'{self.url}/{self.chain}/address/{address}/unspent', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
             unspents: List[Dict] = []
             for item in r.json():
@@ -31,18 +30,18 @@ class WhatsOnChain(Provider):
                 unspent.update(kwargs)
                 unspents.append(unspent)
             return unspents
-        return []
+        return []  # pragma: no cover
 
     def get_balance(self, **kwargs) -> int:
         with suppress(Exception):
-            private_key: PrivateKey = kwargs.get('private_keys')[0]
-            r = requests.get(f'{self.url}/{self.chain}/address/{private_key.address()}/balance', headers=self.headers, timeout=self.timeout)
+            address: str = kwargs.get('address') or kwargs.get('private_keys')[0].address()
+            r = requests.get(f'{self.url}/{self.chain}/address/{address}/balance', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
-            balance: dict = r.json()
+            balance: Dict = r.json()
             return balance.get('confirmed') + balance.get('unconfirmed')
-        return 0
+        return 0  # pragma: no cover
 
-    def broadcast(self, raw: str) -> Optional[str]:
+    def broadcast(self, raw: str) -> Optional[str]:  # pragma: no cover
         with suppress(Exception):
             data = json.dumps({'txHex': raw})
             r = requests.post(f'{self.url}/{self.chain}/tx/raw', headers=self.headers, data=data, timeout=self.timeout)

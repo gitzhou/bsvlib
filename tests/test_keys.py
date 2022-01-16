@@ -1,10 +1,12 @@
 import hashlib
 
 import ecdsa
+import pytest
 
 from bsvlib.constants import Chain
 from bsvlib.hash import sha256
 from bsvlib.keys import Point, PrivateKey, PublicKey
+from bsvlib.script.type import P2pkhScriptType
 from .test_transaction import digest1, digest2, digest3
 
 private_key_hex = 'f97c89aaacf0cd2e47ddbacc97dae1f88bec49106ac37716c451dcdd008a4b62'
@@ -44,12 +46,22 @@ def test_public_key():
     assert PublicKey(public_key_uncompressed) == public_key
     assert PublicKey(public_key_uncompressed).address() == address_uncompressed_main
 
+    assert PublicKey(bytes.fromhex(public_key_compressed)) == public_key
+
+    with pytest.raises(TypeError, match=r'unsupported public key type'):
+        # noinspection PyTypeChecker
+        PublicKey(1.23)
+
+    with pytest.raises(ValueError, match=r'invalid public key prefix'):
+        PublicKey(f'05{x}')
+
 
 def test_private_key():
     assert private_key.public_key() == public_key
     assert private_key.hex() == private_key_hex
     assert private_key.serialize() == private_key_bytes
     assert private_key.int() == private_key_int
+    assert private_key.locking_script() == P2pkhScriptType.locking(address_compressed_main)
 
     priv_key_wif_compressed_main = 'L5agPjZKceSTkhqZF2dmFptT5LFrbr6ZGPvP7u4A6dvhTrr71WZ9'
     priv_key_wif_uncompressed_main = '5KiANv9EHEU4o9oLzZ6A7z4xJJ3uvfK2RLEubBtTz1fSwAbpJ2U'
@@ -82,6 +94,10 @@ def test_private_key():
 
     assert PrivateKey(priv_key_wif_uncompressed_test).wif() == priv_key_wif_uncompressed_test
     assert PrivateKey(priv_key_wif_uncompressed_test).address() == address_uncompressed_test
+
+    with pytest.raises(TypeError, match=r'unsupported private key type'):
+        # noinspection PyTypeChecker
+        PrivateKey(1.23)
 
 
 def test_verify():

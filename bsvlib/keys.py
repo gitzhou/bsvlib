@@ -72,7 +72,7 @@ class PublicKey:
     def __eq__(self, o: object) -> bool:
         if isinstance(o, PublicKey):
             return self.point == o.point
-        return super().__eq__(o)
+        return super().__eq__(o)  # pragma: no cover
 
     def verify(self, signature: bytes, message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bool:
         e = int.from_bytes(hasher(message), 'big')
@@ -91,11 +91,11 @@ class PrivateKey:
         create private key from WIF (str), or int, or bytes
         random a new private key if None
         """
-        self.chain = chain or Chain.MAIN
-        self.compressed = True  # default compressed wif
+        self.chain: Chain = chain or Chain.MAIN
+        self.compressed: bool = True  # default compressed wif
         if private_key is None:
             k = randbelow(curve.n)
-            while not k:
+            while not k:  # pragma: no cover
                 k = randbelow(curve.n)
         else:
             if isinstance(private_key, str):
@@ -146,24 +146,21 @@ class PrivateKey:
     def __eq__(self, o: object) -> bool:
         if isinstance(o, PrivateKey):
             return self.key == o.key
-        return super().__eq__(o)
+        return super().__eq__(o)  # pragma: no cover
 
-    def sign(self, message: serialize, hasher: Optional[Callable[[serialize], serialize]] = hash256) -> serialize:
+    def sign(self, message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bytes:
         """
         :returns: ECDSA signature in DER format, compliant with low-s requirement in BIP-62 and BIP-66
         """
         e = int.from_bytes(hasher(message), 'big')
         r, s = 0, 0
         while not r or not s:
-            k = randbelow(curve.n)
-            while not k:
-                k = randbelow(curve.n)
-            k_x, _ = multiply(k, curve.g)
-            r = k_x % curve.n
-            s = ((e + r * self.key) * modular_inverse(k, curve.n)) % curve.n
+            k = PrivateKey()
+            r = k.public_key().point.x % curve.n
+            s = ((e + r * self.key) * modular_inverse(k.key, curve.n)) % curve.n
         return serialize_signature(r, s)
 
-    def verify(self, signature: serialize, message: serialize, hasher: Callable[[serialize], serialize] = hash256) -> bool:
+    def verify(self, signature: bytes, message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bool:
         return self.public_key().verify(signature=signature, message=message, hasher=hasher)
 
 

@@ -1,6 +1,6 @@
 # bsvlib
 
-[![workflow](https://github.com/gitzhou/bsvlib/actions/workflows/workflow.yml/badge.svg)](https://github.com/gitzhou/bsvlib/actions/workflows/workflow.yml)
+[![build](https://github.com/gitzhou/bsvlib/actions/workflows/build.yml/badge.svg)](https://github.com/gitzhou/bsvlib/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/gitzhou/bsvlib/branch/master/graph/badge.svg?token=ZD1AS8JG9W)](https://codecov.io/gh/gitzhou/bsvlib)
 [![PyPI version](https://img.shields.io/pypi/v/bsvlib.svg?style=flat-square)](https://pypi.org/project/bsvlib)
 [![Python versions](https://img.shields.io/pypi/pyversions/bsvlib.svg?style=flat-square)](https://pypi.org/project/bsvlib)
@@ -70,7 +70,7 @@ t.add_change(private_key.address())
 print(t.sign().broadcast())
 ```
 
-4. Sign with different SIGHASH flags, [more examples](/examples)
+4. Sign with different SIGHASH flags, [more examples](https://github.com/gitzhou/bsvlib/tree/master/examples)
 
 ```python
 from bsvlib import Wallet, Transaction, TxInput, TxOutput

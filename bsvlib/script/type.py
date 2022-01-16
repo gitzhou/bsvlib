@@ -42,9 +42,9 @@ class ScriptType(metaclass=ABCMeta):
         raise NotImplementedError('ScriptType.estimated_unlocking_byte_length')
 
 
-class UnknownScriptType(ScriptType):
+class UnknownScriptType(ScriptType):  # pragma: no cover
 
-    def __repr__(self) -> str:  # pragma: no cover
+    def __repr__(self) -> str:
         return '<ScriptType:Unknown>'
 
     @classmethod
@@ -78,7 +78,7 @@ class P2pkhScriptType(ScriptType):
     @classmethod
     def unlocking(cls, **kwargs) -> Script:
         signature: bytes = kwargs.get('signatures')[0]
-        public_key: bytes = kwargs.get('private_keys')[0].public_key().serialize()
+        public_key: bytes = kwargs.get('public_key') or kwargs.get('private_keys')[0].public_key().serialize()
         sighash: SIGHASH = kwargs.get('sighash')
         return Script(assemble_pushdata(signature + sighash.to_bytes(1, 'little')) + assemble_pushdata(public_key))
 
@@ -106,11 +106,11 @@ class OpReturnScriptType(ScriptType):
         return Script(script)
 
     @classmethod
-    def unlocking(cls, **kwargs) -> Script:
+    def unlocking(cls, **kwargs) -> Script:  # pragma: no cover
         raise ValueError("OP_RETURN cannot be unlocked")
 
     @classmethod
-    def estimated_unlocking_byte_length(cls, **kwargs) -> int:
+    def estimated_unlocking_byte_length(cls, **kwargs) -> int:  # pragma: no cover
         raise ValueError("OP_RETURN cannot be unlocked")
 
 
@@ -140,5 +140,5 @@ class P2pkScriptType(ScriptType):
         return Script(assemble_pushdata(signature + sighash.to_bytes(1, 'little')))
 
     @classmethod
-    def estimated_unlocking_byte_length(cls, **kwargs) -> int:
+    def estimated_unlocking_byte_length(cls, **kwargs) -> int:  # pragma: no cover
         return 73
