@@ -1,4 +1,4 @@
-from typing import Literal
+from typing_extensions import Literal
 
 from .hash import hash256
 
