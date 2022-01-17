@@ -1,3 +1,5 @@
+import re
+from contextlib import suppress
 from typing import Tuple
 
 from .base58 import base58check_decode
@@ -25,11 +27,14 @@ def decode_p2pkh_address(address: str) -> Tuple[bytes, Chain]:
     """
     :returns: tuple (public_key_hash_bytes, chain)
     """
+    if not re.match(r'^[1mn][a-km-zA-HJ-NP-Z1-9]{24,33}$', address):
+        # - a Bitcoin address is between 25 and 34 characters long;
+        # - the address always starts with a 1, m, or n
+        # - an address can contain all alphanumeric characters, with the exceptions of 0, O, I, and l.
+        raise ValueError(f'invalid P2PKH address {address}')
     decoded = base58check_decode(address)
     prefix = decoded[:1]
     chain = ADDRESS_PREFIX_CHAIN_DICT.get(prefix)
-    if not chain:
-        raise ValueError(f'unknown P2PKH address prefix {prefix.hex()}')
     return decoded[1:], chain
 
 
@@ -111,3 +116,13 @@ def serialize_signature(r: int, s: int) -> bytes:
     s_bytes = s.to_bytes(NUMBER_BYTE_LENGTH, 'big').lstrip(b'\x00')
     serialized += bytes([2, len(s_bytes)]) + s_bytes
     return bytes([0x30, len(serialized)]) + serialized
+
+
+def validate_p2pkh_address(address: str, chain: Chain = Chain.MAIN) -> bool:
+    """
+    :returns: True if address is a valid bitcoin legacy address (P2PKH)
+    """
+    with suppress(Exception):
+        _, chain_decoded = decode_p2pkh_address(address)
+        return chain_decoded == chain
+    return False
