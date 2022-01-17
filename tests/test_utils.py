@@ -3,7 +3,7 @@ import pytest
 from bsvlib.base58 import base58check_encode, b58_encode
 from bsvlib.constants import Chain
 from bsvlib.curve import curve
-from bsvlib.utils import decode_p2pkh_address, decode_wif, get_pushdata_code, validate_p2pkh_address
+from bsvlib.utils import decode_address, decode_wif, get_pushdata_code, validate_address, resolve_address
 from bsvlib.utils import unsigned_to_varint, deserialize_signature, serialize_signature
 
 
@@ -27,25 +27,34 @@ def test_unsigned_to_varint():
         unsigned_to_varint(0x010000000000000000)
 
 
-def test_p2pkh_address():
-    assert decode_p2pkh_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa') == (bytes.fromhex('62e907b15cbf27d5425399ebf6f0fb50ebb88f18'), Chain.MAIN)
-    assert decode_p2pkh_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdBC') == (bytes.fromhex('54b34b1ba228ba1d75dca5a40a114dc0f13a2687'), Chain.TEST)
-    assert decode_p2pkh_address('n34P4t4K6bJtc6qfGU2pqcRix8mUACdNyJ') == (bytes.fromhex('ec4c3733cff428e9a3c1434274b109fbe2a33b62'), Chain.TEST)
+def test_address():
+    assert decode_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa') == (bytes.fromhex('62e907b15cbf27d5425399ebf6f0fb50ebb88f18'), Chain.MAIN)
+    assert decode_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdBC') == (bytes.fromhex('54b34b1ba228ba1d75dca5a40a114dc0f13a2687'), Chain.TEST)
+    assert decode_address('n34P4t4K6bJtc6qfGU2pqcRix8mUACdNyJ') == (bytes.fromhex('ec4c3733cff428e9a3c1434274b109fbe2a33b62'), Chain.TEST)
 
     address_invalid_prefix = base58check_encode(b'\xff' + bytes.fromhex('62e907b15cbf27d5425399ebf6f0fb50ebb88f18'))
     with pytest.raises(ValueError, match=r'invalid P2PKH address'):
-        decode_p2pkh_address(address_invalid_prefix)
+        decode_address(address_invalid_prefix)
 
     address_invalid_checksum = b58_encode(b'\x00' + bytes.fromhex('62e907b15cbf27d5425399ebf6f0fb50ebb88f18') + b'\x00\x00\x00\x00')
     with pytest.raises(ValueError, match=r'unmatched base58 checksum'):
-        decode_p2pkh_address(address_invalid_checksum)
+        decode_address(address_invalid_checksum)
 
-    assert validate_p2pkh_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')
-    assert validate_p2pkh_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdBC')
-    assert not validate_p2pkh_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdB')
-    assert not validate_p2pkh_address('')
-    assert not validate_p2pkh_address(address_invalid_prefix)
-    assert not validate_p2pkh_address(address_invalid_checksum)
+    assert validate_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')
+    assert validate_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdBC')
+    assert not validate_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdB')
+    assert not validate_address('')
+    assert not validate_address(address_invalid_prefix)
+    assert not validate_address(address_invalid_checksum)
+
+
+def test_resolve_address():
+    assert resolve_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa') == '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'
+    assert resolve_address('') is None
+    assert resolve_address('1aaron67')
+    assert resolve_address('$aaron67')
+    assert resolve_address('@1239')
+    assert resolve_address('aaron67@moneybutton.com')
 
 
 def test_decode_wif():

@@ -1,9 +1,11 @@
 import re
 from contextlib import suppress
-from typing import Tuple
+from typing import Tuple, Optional
+
+import requests
 
 from .base58 import base58check_decode
-from .constants import Chain, ADDRESS_PREFIX_CHAIN_DICT, WIF_PREFIX_CHAIN_DICT, OP, NUMBER_BYTE_LENGTH
+from .constants import Chain, ADDRESS_PREFIX_CHAIN_DICT, WIF_PREFIX_CHAIN_DICT, OP, NUMBER_BYTE_LENGTH, HTTP_REQUEST_TIMEOUT
 from .curve import curve
 
 
@@ -23,7 +25,7 @@ def unsigned_to_varint(num: int) -> bytes:
         return b'\xff' + num.to_bytes(8, 'little')
 
 
-def decode_p2pkh_address(address: str) -> Tuple[bytes, Chain]:
+def decode_address(address: str) -> Tuple[bytes, Chain]:
     """
     :returns: tuple (public_key_hash_bytes, chain)
     """
@@ -39,7 +41,7 @@ def decode_p2pkh_address(address: str) -> Tuple[bytes, Chain]:
 
 
 def address_to_public_key_hash(address: str) -> bytes:
-    return decode_p2pkh_address(address)[0]
+    return decode_address(address)[0]
 
 
 def decode_wif(wif: str) -> Tuple[bytes, bool, Chain]:
@@ -118,11 +120,28 @@ def serialize_signature(r: int, s: int) -> bytes:
     return bytes([0x30, len(serialized)]) + serialized
 
 
-def validate_p2pkh_address(address: str) -> bool:
+def validate_address(address: str) -> bool:
     """
     :returns: True if address is a valid bitcoin legacy address (P2PKH)
     """
     with suppress(Exception):
-        decode_p2pkh_address(address)
+        decode_address(address)
         return True
     return False
+
+
+def resolve_address(receiver: str) -> Optional[str]:
+    """convert paymail, HandCash handle, RelayX handle, and Twetch user number to bitcoin legacy address
+    :returns: None if failure
+    """
+    with suppress(Exception):
+        if validate_address(receiver):
+            # receiver is already a legacy address
+            return receiver
+        # receiver is an alias
+        r = requests.get(f'https://api.polynym.io/getAddress/{receiver}', timeout=HTTP_REQUEST_TIMEOUT)
+        r.raise_for_status()
+        address = r.json().get('address')
+        decode_address(address)
+        return address
+    return None
