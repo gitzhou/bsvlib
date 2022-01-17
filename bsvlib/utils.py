@@ -116,6 +116,8 @@ def serialize_signature(r: int, s: int) -> bytes:
     serialized = bytes([2, len(r_bytes)]) + r_bytes
     # s
     s_bytes = s.to_bytes(NUMBER_BYTE_LENGTH, 'big').lstrip(b'\x00')
+    if s_bytes[0] & 0x80:
+        s_bytes = b'\x00' + s_bytes
     serialized += bytes([2, len(s_bytes)]) + s_bytes
     return bytes([0x30, len(serialized)]) + serialized
 
