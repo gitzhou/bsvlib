@@ -92,10 +92,16 @@ def test_signature_serialization():
     r2 = 57069924365784604413146650701306419944030991562754207986153667089859857018394
     s2 = 11615408348402409164215774430388304177694127390766203039231142052414850779557
 
+    der3 = '3044022023f093813911a658ac7cbaeb8ba7828b4067ea3582c78f8bd2c38b1f317489ba022000e1e43145a89f0d9d8524798b8ae2ca60ebf3947e35106d5e1ddf398985a033'
+    r3 = 16256011036517295435281672405882454685603286080662722236323812471789728336314
+    s3 = 399115516115506318232804590771004057701078428754012727453057145885291814963
+
     assert serialize_signature(r1, s1).hex() == der1
     assert serialize_signature(r1, curve.n - s1).hex() == der1
     assert serialize_signature(r2, s2).hex() == der2
     assert serialize_signature(r2, curve.n - s2).hex() == der2
+    assert serialize_signature(r3, s3).hex() == der3
+    assert serialize_signature(r3, curve.n - s3).hex() == der3
 
     assert deserialize_signature(bytes.fromhex(der1)) == (r1, s1)
     assert deserialize_signature(bytes.fromhex(der2)) == (r2, s2)
