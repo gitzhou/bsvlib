@@ -118,11 +118,11 @@ def serialize_signature(r: int, s: int) -> bytes:
     return bytes([0x30, len(serialized)]) + serialized
 
 
-def validate_p2pkh_address(address: str, chain: Chain = Chain.MAIN) -> bool:
+def validate_p2pkh_address(address: str) -> bool:
     """
     :returns: True if address is a valid bitcoin legacy address (P2PKH)
     """
     with suppress(Exception):
-        _, chain_decoded = decode_p2pkh_address(address)
-        return chain_decoded == chain
+        decode_p2pkh_address(address)
+        return True
     return False
