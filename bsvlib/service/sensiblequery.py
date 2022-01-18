@@ -6,6 +6,7 @@ import requests
 
 from .provider import Provider
 from ..constants import HTTP_REQUEST_TIMEOUT
+from ..keys import PublicKey
 from ..script.type import P2pkScriptType
 
 
@@ -21,7 +22,8 @@ class SensibleQuery(Provider):
         P2PKH and P2PK unspents
         """
         with suppress(Exception):
-            address: str = kwargs.get('address') or kwargs.get('private_keys')[0].address()
+            public_key: PublicKey = kwargs.get('public_key') or kwargs.get('private_keys')[0].public_key()
+            address: str = kwargs.get('address') or public_key.address()
             params = {'cursor': 0, 'size': 5120}
             r = requests.get(f'{self.url}/address/{address}/utxo', headers=self.headers, params=params, timeout=self.timeout)
             r.raise_for_status()
@@ -29,11 +31,11 @@ class SensibleQuery(Provider):
             for item in r.json()['data']:
                 unspent = {'txid': item['txid'], 'vout': item['vout'], 'satoshi': item['satoshi'], 'height': item['height']}
                 if item['scriptType'] in ['21ac', '41ac']:  # pragma: no cover
-                    # P2PK requires private key to set locking script
-                    if not kwargs.get('private_keys'):
+                    # P2PK requires public key to set locking script
+                    if not public_key:
                         continue
                     unspent['script_type'] = P2pkScriptType()
-                    unspent['locking_script'] = P2pkScriptType.locking(kwargs.get('private_keys')[0].public_key().serialize())
+                    unspent['locking_script'] = P2pkScriptType.locking(public_key.serialize())
                 unspent.update(kwargs)
                 unspents.append(unspent)
             return unspents
@@ -41,7 +43,8 @@ class SensibleQuery(Provider):
 
     def get_balance(self, **kwargs) -> int:
         with suppress(Exception):
-            address: str = kwargs.get('address') or kwargs.get('private_keys')[0].address()
+            public_key: PublicKey = kwargs.get('public_key') or kwargs.get('private_keys')[0].public_key()
+            address: str = kwargs.get('address') or public_key.address()
             r = requests.get(f'{self.url}/address/{address}/balance', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
             balance: Dict = r.json()['data']

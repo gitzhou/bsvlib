@@ -6,6 +6,7 @@ import requests
 
 from .provider import Provider
 from ..constants import Chain, HTTP_REQUEST_TIMEOUT
+from ..keys import PublicKey
 
 
 class WhatsOnChain(Provider):
@@ -21,7 +22,8 @@ class WhatsOnChain(Provider):
         only P2PKH unspents
         """
         with suppress(Exception):
-            address: str = kwargs.get('address') or kwargs.get('private_keys')[0].address()
+            public_key: PublicKey = kwargs.get('public_key') or kwargs.get('private_keys')[0].public_key()
+            address: str = kwargs.get('address') or public_key.address()
             r = requests.get(f'{self.url}/{self.chain}/address/{address}/unspent', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
             unspents: List[Dict] = []
@@ -34,7 +36,8 @@ class WhatsOnChain(Provider):
 
     def get_balance(self, **kwargs) -> int:
         with suppress(Exception):
-            address: str = kwargs.get('address') or kwargs.get('private_keys')[0].address()
+            public_key: PublicKey = kwargs.get('public_key') or kwargs.get('private_keys')[0].public_key()
+            address: str = kwargs.get('address') or public_key.address()
             r = requests.get(f'{self.url}/{self.chain}/address/{address}/balance', headers=self.headers, timeout=self.timeout)
             r.raise_for_status()
             balance: Dict = r.json()
