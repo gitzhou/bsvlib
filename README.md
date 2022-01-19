@@ -13,7 +13,7 @@ A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
 - All the SIGHASH flags supported
 - Additional script types can be customized
 - Ability to adapt to different service providers
-- Fully implement ECDSA
+- Fully ECDSA implementation
 
 ## Installation
 
@@ -112,3 +112,15 @@ print(verify_signed_text(text, address, signature))
 
 - [@AustEcon](https://github.com/AustEcon/bitsv)
 - [@xiangpengm](https://github.com/xiangpengm)
+
+## Donation
+
+If you like my work or have found this library useful, feel free to donate me a cup of coffee.
+
+Every little satoshi helps. 👏
+
+```
+1HYeFCE2KG4CW4Jwz5NmDqAZK9Q626ChmN
+```
+
+![](https://aaron67-public.oss-cn-beijing.aliyuncs.com/202201200232249.png?x-oss-process=image/resize,p_50)
