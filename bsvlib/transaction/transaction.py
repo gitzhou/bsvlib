@@ -12,7 +12,7 @@ from ..script.type import ScriptType, P2pkhScriptType, OpReturnScriptType
 from ..service.provider import Provider
 from ..service.service import Service
 from ..service.whatsonchain import WhatsOnChain
-from ..utils import unsigned_to_varint
+from ..utils import unsigned_to_varint, serialize_ecdsa_der
 
 
 class InsufficientFundsError(ValueError):
@@ -217,7 +217,7 @@ class Transaction:
         for i in range(len(self.tx_inputs)):
             tx_input = self.tx_inputs[i]
             if not tx_input.unlocking_script or not bypass:
-                signatures: List[bytes] = [private_key.sign(digests[i]) for private_key in tx_input.private_keys]
+                signatures: List[bytes] = [serialize_ecdsa_der(private_key.sign(digests[i])) for private_key in tx_input.private_keys]
                 payload = {'signatures': signatures, 'private_keys': tx_input.private_keys, 'sighash': tx_input.sighash}
                 tx_input.unlocking_script = tx_input.script_type.unlocking(**payload, **self.kwargs, **kwargs)
         return self

@@ -1,4 +1,5 @@
 import re
+from base64 import b64encode, b64decode
 from contextlib import suppress
 from typing import Tuple, Optional
 
@@ -40,7 +41,37 @@ def decode_address(address: str) -> Tuple[bytes, Chain]:
     return decoded[1:], chain
 
 
+def validate_address(address: str) -> bool:
+    """
+    :returns: True if address is a valid bitcoin legacy address (P2PKH)
+    """
+    with suppress(Exception):
+        decode_address(address)
+        return True
+    return False
+
+
+def resolve_address(receiver: str) -> Optional[str]:
+    """convert paymail, HandCash handle, RelayX handle to bitcoin legacy address
+    :returns: None if failure
+    """
+    with suppress(Exception):
+        if validate_address(receiver):
+            # receiver is already a legacy address
+            return receiver
+        # receiver is an alias
+        r = requests.get(f'https://api.polynym.io/getAddress/{receiver}', timeout=HTTP_REQUEST_TIMEOUT)
+        r.raise_for_status()
+        address = r.json().get('address')
+        decode_address(address)
+        return address
+    return None
+
+
 def address_to_public_key_hash(address: str) -> bytes:
+    """
+    :returns: convert P2PKH address to the corresponding public key hash
+    """
     return decode_address(address)[0]
 
 
@@ -82,9 +113,9 @@ def assemble_pushdata(pushdata: bytes) -> bytes:
     return get_pushdata_code(len(pushdata)) + pushdata
 
 
-def deserialize_signature(der: bytes) -> Tuple[int, int]:
+def deserialize_ecdsa_der(der: bytes) -> Tuple[int, int]:
     """
-    deserialize ECDSA bitcoin DER formatted signature to (r, s)
+    deserialize ECDSA signature from bitcoin DER to (r, s)
     """
     try:
         assert der[0] == 0x30
@@ -102,10 +133,11 @@ def deserialize_signature(der: bytes) -> Tuple[int, int]:
         raise ValueError(f'invalid DER encoded {der.hex()}')
 
 
-def serialize_signature(r: int, s: int) -> bytes:
+def serialize_ecdsa_der(signature: Tuple[int, int]) -> bytes:
     """
     serialize ECDSA signature (r, s) to bitcoin strict DER format
     """
+    r, s = signature
     # enforce low s value
     if s > curve.n // 2:
         s = curve.n - s
@@ -122,28 +154,42 @@ def serialize_signature(r: int, s: int) -> bytes:
     return bytes([0x30, len(serialized)]) + serialized
 
 
-def validate_address(address: str) -> bool:
+def serialize_text(text: str) -> bytes:
     """
-    :returns: True if address is a valid bitcoin legacy address (P2PKH)
+    serialize plain text to bytes in format: varint_length + text.utf-8
     """
-    with suppress(Exception):
-        decode_address(address)
-        return True
-    return False
+    message: bytes = text.encode('utf-8')
+    return unsigned_to_varint(len(message)) + message
 
 
-def resolve_address(receiver: str) -> Optional[str]:
-    """convert paymail, HandCash handle, RelayX handle, and Twetch user number to bitcoin legacy address
-    :returns: None if failure
+def text_digest(text: str) -> bytes:
     """
-    with suppress(Exception):
-        if validate_address(receiver):
-            # receiver is already a legacy address
-            return receiver
-        # receiver is an alias
-        r = requests.get(f'https://api.polynym.io/getAddress/{receiver}', timeout=HTTP_REQUEST_TIMEOUT)
-        r.raise_for_status()
-        address = r.json().get('address')
-        decode_address(address)
-        return address
-    return None
+    :returns: the digest of arbitrary text when signing with bitcoin private key
+    """
+    return serialize_text('Bitcoin Signed Message:\n') + serialize_text(text)
+
+
+def serialize_ecdsa_recoverable(signature: Tuple[int, int, int], compressed: bool = True) -> str:
+    """serialize recoverable ECDSA signature (recovery_id, r, s), compressed is True if used compressed public key
+    :returns: serialized recoverable signature formatted in base64
+    """
+    recovery_id, r, s = signature
+    prefix: int = 27 + recovery_id + (4 if compressed else 0)
+    signature: bytes = prefix.to_bytes(1, 'big') + r.to_bytes(NUMBER_BYTE_LENGTH, 'big') + s.to_bytes(NUMBER_BYTE_LENGTH, 'big')
+    return b64encode(signature).decode('ascii')
+
+
+def deserialize_ecdsa_recoverable(signature: str) -> Tuple[Tuple[int, int, int], bool]:
+    """
+    :returns: ((recovery_id, r, s), used_compressed_public_key)
+    """
+    signature_bytes = b64decode(signature)
+    assert len(signature_bytes) == 65, f'invalid recoverable ECDSA signature {signature}'
+    prefix, r, s = signature_bytes[0], int.from_bytes(signature_bytes[1:33], 'big'), int.from_bytes(signature_bytes[33:], 'big')
+    assert 27 <= prefix < 35, f'invalid recoverable ECDSA signature prefix {prefix}'
+    compressed = False
+    if prefix >= 31:
+        compressed = True
+        prefix -= 4
+    recovery_id = prefix - 27
+    return (recovery_id, r, s), compressed

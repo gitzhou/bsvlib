@@ -13,6 +13,7 @@ A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
 - All the SIGHASH flags supported
 - Additional script types can be customized
 - Ability to adapt to different service providers
+- Fully implement ECDSA
 
 ## Installation
 
@@ -22,7 +23,7 @@ $ pip install bsvlib
 
 ## Examples
 
-1. Send BSV in one line.
+1. Send BSV in one line
 
 ```python
 from bsvlib import Wallet
@@ -31,7 +32,7 @@ from bsvlib import Wallet
 print(Wallet(['YOUR_WIF_GOES_HERE']).send_transaction(outputs=[('1HYeFCE2KG4CW4Jwz5NmDqAZK9Q626ChmN', 724996)]))
 ```
 
-2. Good to send unspent locked by different keys in one transaction, and OP_RETURN output is supported as well
+2. Send unspent locked by different keys in one transaction, support OP_RETURN output as well
 
 ```python
 from bsvlib import Wallet
@@ -87,6 +88,24 @@ t.sign()
 
 # it's good to append any outputs AFTER the first output, no need to sign, can broadcast directly
 print(t.add_change().broadcast())
+```
+
+5. Sign arbitrary text with private key
+
+```python
+from bsvlib import Key, verify_signed_text
+
+private_key = Key('L5agPjZKceSTkhqZF2dmFptT5LFrbr6ZGPvP7u4A6dvhTrr71WZ9')
+text = 'hello world'
+
+# sign arbitrary text with bitcoin private key
+address, signature = private_key.sign_text(text)
+
+# verify https://reinproject.org/bitcoin-signature-tool/
+print(address, signature)
+
+# verify
+print(verify_signed_text(text, address, signature))
 ```
 
 ## Credits

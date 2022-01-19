@@ -4,7 +4,8 @@ from bsvlib.base58 import base58check_encode, b58_encode
 from bsvlib.constants import Chain
 from bsvlib.curve import curve
 from bsvlib.utils import decode_address, decode_wif, get_pushdata_code, validate_address, resolve_address
-from bsvlib.utils import unsigned_to_varint, deserialize_signature, serialize_signature
+from bsvlib.utils import serialize_ecdsa_recoverable, deserialize_ecdsa_recoverable
+from bsvlib.utils import unsigned_to_varint, deserialize_ecdsa_der, serialize_ecdsa_der
 
 
 def test_unsigned_to_varint():
@@ -53,7 +54,6 @@ def test_resolve_address():
     assert resolve_address('') is None
     assert resolve_address('1aaron67')
     assert resolve_address('$aaron67')
-    assert resolve_address('@1239')
     assert resolve_address('aaron67@moneybutton.com')
 
 
@@ -83,7 +83,7 @@ def test_get_pushdata_code():
     assert get_pushdata_code(0x01020304) == bytes.fromhex('4e04030201')
 
 
-def test_signature_serialization():
+def test_der_serialization():
     der1: str = '3045022100fd5647a062d42cdde975ad4796cefd6b5613e731c08e0fb6907f757a60f44b020220350fee392713423ebfcd8026ea29cc95917d823392f07cd6c80f46712650388e'
     r1 = 114587593887127314608220924841831336233967095853165151956820984900193959037698
     s1 = 24000727837347392504013031837120627225728348681623127776947626422811445180558
@@ -96,14 +96,24 @@ def test_signature_serialization():
     r3 = 16256011036517295435281672405882454685603286080662722236323812471789728336314
     s3 = 399115516115506318232804590771004057701078428754012727453057145885291814963
 
-    assert serialize_signature(r1, s1).hex() == der1
-    assert serialize_signature(r1, curve.n - s1).hex() == der1
-    assert serialize_signature(r2, s2).hex() == der2
-    assert serialize_signature(r2, curve.n - s2).hex() == der2
-    assert serialize_signature(r3, s3).hex() == der3
-    assert serialize_signature(r3, curve.n - s3).hex() == der3
+    assert serialize_ecdsa_der((r1, s1)).hex() == der1
+    assert serialize_ecdsa_der((r1, curve.n - s1)).hex() == der1
+    assert serialize_ecdsa_der((r2, s2)).hex() == der2
+    assert serialize_ecdsa_der((r2, curve.n - s2)).hex() == der2
+    assert serialize_ecdsa_der((r3, s3)).hex() == der3
+    assert serialize_ecdsa_der((r3, curve.n - s3)).hex() == der3
 
-    assert deserialize_signature(bytes.fromhex(der1)) == (r1, s1)
-    assert deserialize_signature(bytes.fromhex(der2)) == (r2, s2)
+    assert deserialize_ecdsa_der(bytes.fromhex(der1)) == (r1, s1)
+    assert deserialize_ecdsa_der(bytes.fromhex(der2)) == (r2, s2)
     with pytest.raises(ValueError, match=r'invalid DER encoded'):
-        deserialize_signature(b'')
+        deserialize_ecdsa_der(b'')
+
+
+def test_recoverable_serialization():
+    serialized: str = 'IGdzMq98lowek10e3JFXWj909xp0oLRj71aF7jpWRxaabwH+fBia/K2JpoGQlFFbAl/Q5jo2DYSzQw6pZWhmRtk='
+    recovery_id = 1
+    r = 46791760634954614230959036903197650877536710453529507613159894982805988775578
+    s = 50210249429004071986853078788876176203428035162933045037212292756431067039449
+
+    assert serialize_ecdsa_recoverable((recovery_id, r, s)) == serialized
+    assert deserialize_ecdsa_recoverable(serialized)[0] == (recovery_id, r, s)

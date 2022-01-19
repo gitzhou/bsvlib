@@ -121,7 +121,7 @@ def multiply(k: int, point: Optional[Point]) -> Optional[Point]:
 
 def get_y(x: int, even: bool) -> int:
     """
-    calculate y from x
+    calculate y from x and the parity of y
     """
     y_square = (x * x * x + curve.a * x + curve.b) % curve.p
     y = pow(y_square, (curve.p + 1) // 4, curve.p)
