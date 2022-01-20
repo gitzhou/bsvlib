@@ -133,3 +133,17 @@ def test_sign():
 
     address, signature = PrivateKey('5KiANv9EHEU4o9oLzZ6A7z4xJJ3uvfK2RLEubBtTz1fSwAbpJ2U').sign_text(text)
     assert verify_signed_text(text, address, signature)
+
+
+def test_ecdh():
+    alice, bob = PrivateKey(), PrivateKey()
+    assert alice.ecdh_key(bob.public_key()) == bob.ecdh_key(alice.public_key())
+    ephemeral = PrivateKey()
+    assert alice.public_key().ecdh_key(ephemeral) == alice.ecdh_key(ephemeral.public_key())
+
+
+def test_encryption():
+    plain = 'hello world'
+    encrypted = 'QklFMQPkjNG3xxnfRv7oUDjUYPH2VN3VFrcglCcwmeYpJpsjRKnfl/XsS+dOgocRV6JKVHkfUZAKIHDo7vwxjv/BPkV5EA2Dl4RJ6d/jpWwgGdFBYA=='
+    assert private_key.decrypt_text(encrypted) == plain
+    assert private_key.decrypt_text(public_key.encrypt_text(plain)) == plain

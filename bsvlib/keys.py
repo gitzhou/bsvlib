@@ -1,6 +1,10 @@
+import hashlib
+import hmac
+from base64 import b64encode, b64decode
 from secrets import randbelow
 from typing import Optional, Union, Callable, Tuple
 
+from .aes import aes_encrypt_with_iv, aes_decrypt_with_iv
 from .base58 import base58check_encode
 from .constants import Chain, CHAIN_ADDRESS_PREFIX_DICT, CHAIN_WIF_PREFIX_DICT
 from .constants import NUMBER_BYTE_LENGTH
@@ -103,6 +107,32 @@ class PublicKey:
         """
         _, r, s = signature
         return self.verify((r, s), message, hasher) and self == recover_public_key(signature, message, hasher)
+
+    def ecdh_key(self, key: 'PrivateKey') -> bytes:
+        point = multiply(key.key, self.point)
+        return PublicKey(point).serialize()
+
+    def encrypt(self, message: bytes) -> bytes:
+        # generate an ephemeral EC private key in order to derive shared secret (ECDH key)
+        ephemeral_private_key = PrivateKey()
+        # derive ECDH key
+        ecdh_key: bytes = self.ecdh_key(ephemeral_private_key)
+        # SHA512(ECDH_KEY), then we have
+        # key_e and iv used in AES, key_m used in HMAC.SHA256
+        key: bytes = hashlib.sha512(ecdh_key).digest()
+        iv, key_e, key_m = key[0:16], key[16:32], key[32:]
+        # make AES encryption
+        cipher: bytes = aes_encrypt_with_iv(key_e, iv, message)
+        # encrypted = magic_bytes (4 bytes) + ephemeral_public_key (33 bytes) + cipher (16 bytes at least)
+        encrypted: bytes = 'BIE1'.encode('utf-8') + ephemeral_private_key.public_key().serialize() + cipher
+        # mac = HMAC_SHA256(encrypted), 32 bytes
+        mac: bytes = hmac.new(key_m, encrypted, hashlib.sha256).digest()
+        # give out encrypted + mac
+        return encrypted + mac
+
+    def encrypt_text(self, text: str) -> str:
+        message: bytes = text.encode('utf-8')
+        return b64encode(self.encrypt(message)).decode('ascii')
 
 
 class PrivateKey:
@@ -223,6 +253,36 @@ class PrivateKey:
         """
         message: bytes = text_digest(text)
         return self.address(), serialize_ecdsa_recoverable(self.sign_recoverable(message), self.compressed)
+
+    def ecdh_key(self, key: PublicKey) -> bytes:
+        point = multiply(self.key, key.point)
+        return PublicKey(point).serialize()
+
+    def decrypt(self, message: bytes) -> bytes:
+        assert len(message) >= 85, 'invalid encrypted length'
+        encrypted, mac = message[:-32], message[-32:]
+        # encrypted = magic_bytes (4 bytes) + ephemeral_public_key (33 bytes) + cipher_text (16 bytes at least)
+        magic_bytes, ephemeral_public_key, cipher = encrypted[:4], PublicKey(encrypted[4:37]), encrypted[37:]
+        assert magic_bytes.decode('utf-8') == 'BIE1', 'invalid magic bytes'
+        # restore ECDH key
+        ecdh_key = self.ecdh_key(ephemeral_public_key)
+        # restore iv, key_e, key_m
+        key = hashlib.sha512(ecdh_key).digest()
+        iv, key_e, key_m = key[0:16], key[16:32], key[32:]
+        # verify mac
+        assert hmac.new(key_m, encrypted, hashlib.sha256).digest().hex() == mac.hex(), 'incorrect hmac checksum'
+        # make the AES decryption
+        return aes_decrypt_with_iv(key_e, iv, cipher)
+
+    def decrypt_text(self, text: str) -> str:
+        message: bytes = b64decode(text)
+        return self.decrypt(message).decode('utf-8')
+
+    def encrypt(self, message: bytes) -> bytes:  # pragma: no cover
+        return self.public_key().encrypt(message)
+
+    def encrypt_text(self, text: str) -> str:  # pragma: no cover
+        return self.public_key().encrypt_text(text)
 
 
 def verify_signed_text(text: str, address: str, signature: str, hasher: Callable[[bytes], bytes] = hash256) -> bool:

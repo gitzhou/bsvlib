@@ -14,6 +14,7 @@ A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
 - Additional script types can be customized
 - Ability to adapt to different service providers
 - Fully ECDSA implementation
+- ECDH and Electrum ECIES (aka BIE1) implementation
 
 ## Installation
 
@@ -106,6 +107,24 @@ print(address, signature)
 
 # verify
 print(verify_signed_text(text, address, signature))
+```
+
+6. Encrypt message with public key, decrypt with the corresponding private key
+
+```python
+from bsvlib import Key
+
+private_key = Key('L5agPjZKceSTkhqZF2dmFptT5LFrbr6ZGPvP7u4A6dvhTrr71WZ9')
+public_key = private_key.public_key()
+
+plain = 'hello world'
+
+# use public key to encrypt
+encrypted = public_key.encrypt_text(plain)
+print(encrypted)
+
+# decrypt with the corresponding private key
+print(private_key.decrypt_text(encrypted))
 ```
 
 ## Credits
