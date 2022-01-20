@@ -1,5 +1,6 @@
 requests~=2.27.1
 typing-extensions~=4.0.1
+pycryptodomex~=3.12.0
 
 pytest~=6.2.5
 ecdsa~=0.17.0

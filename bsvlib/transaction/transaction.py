@@ -15,7 +15,7 @@ from ..service.whatsonchain import WhatsOnChain
 from ..utils import unsigned_to_varint, serialize_ecdsa_der
 
 
-class InsufficientFundsError(ValueError):
+class InsufficientFunds(ValueError):
     pass
 
 
@@ -284,5 +284,5 @@ class Transaction:
 
     def broadcast(self) -> Optional[str]:  # pragma: no cover
         if self.fee() < self.estimated_fee():
-            raise InsufficientFundsError(f'require {self.estimated_fee() + self.satoshi_total_out()} satoshi but only {self.satoshi_total_in()}')
+            raise InsufficientFunds(f'require {self.estimated_fee() + self.satoshi_total_out()} satoshi but only {self.satoshi_total_in()}')
         return Service(self.chain, self.provider).broadcast(self.hex())

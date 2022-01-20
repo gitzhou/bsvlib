@@ -1,2 +1,2 @@
-from .transaction import TxInput, TxOutput, Transaction, InsufficientFundsError
+from .transaction import TxInput, TxOutput, Transaction, InsufficientFunds
 from .unspent import Unspent

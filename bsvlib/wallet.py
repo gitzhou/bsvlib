@@ -6,7 +6,7 @@ from .constants import Chain, THREAD_POOL_MAX_EXECUTORS
 from .keys import PrivateKey
 from .service.provider import Provider
 from .service.service import Service
-from .transaction.transaction import Transaction, TxOutput, InsufficientFundsError
+from .transaction.transaction import Transaction, TxOutput, InsufficientFunds
 from .transaction.unspent import Unspent
 
 
@@ -81,7 +81,7 @@ class Wallet:
         """
         self.unspents = unspents or self.get_unspents(refresh=True, **self.kwargs, **kwargs)
         if not self.unspents:
-            raise InsufficientFundsError('transaction mush have at least one unspent')
+            raise InsufficientFunds('transaction mush have at least one unspent')
 
         t = Transaction(fee_rate=fee_rate, chain=self.chain, provider=self.provider)
         if pushdatas:
@@ -104,7 +104,7 @@ class Wallet:
                 t.add_input(unspent)
         if t.fee() < t.estimated_fee():
             self.unspents.extend(picked_unspents)
-            raise InsufficientFundsError(f'require {t.estimated_fee() + t.satoshi_total_out()} satoshi but only {t.satoshi_total_in()}')
+            raise InsufficientFunds(f'require {t.estimated_fee() + t.satoshi_total_out()} satoshi but only {t.satoshi_total_in()}')
         if change:
             t.add_change(leftover)
         if sign:
