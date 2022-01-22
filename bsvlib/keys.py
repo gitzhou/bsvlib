@@ -284,6 +284,10 @@ class PrivateKey:
     def encrypt_text(self, text: str) -> str:  # pragma: no cover
         return self.public_key().encrypt_text(text)
 
+    @classmethod
+    def from_hex(cls, value: str) -> 'PrivateKey':
+        return PrivateKey(bytes.fromhex(value))
+
 
 def verify_signed_text(text: str, address: str, signature: str, hasher: Callable[[bytes], bytes] = hash256) -> bool:
     """

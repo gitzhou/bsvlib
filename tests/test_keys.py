@@ -59,6 +59,7 @@ def test_public_key():
 
 
 def test_private_key():
+    assert private_key == PrivateKey.from_hex(private_key_hex)
     assert private_key.public_key() == public_key
     assert private_key.hex() == private_key_hex
     assert private_key.serialize() == private_key_bytes
