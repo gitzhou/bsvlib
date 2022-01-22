@@ -93,7 +93,7 @@ class PublicKey:
         """
         verify ECDSA signature (r, s)
         """
-        e = int.from_bytes(hasher(message), 'big')
+        e = int.from_bytes(hasher(message) if hasher else message, 'big')
         r, s = signature
         w = modular_inverse(s, curve.n)
         u1 = (w * e) % curve.n
@@ -209,7 +209,7 @@ class PrivateKey:
         """
         :returns: ECDSA signature in format (r, s)
         """
-        e = int.from_bytes(hasher(message), 'big')
+        e = int.from_bytes(hasher(message) if hasher else message, 'big')
         r, s = 0, 0
         while not r or not s:
             k = PrivateKey()
@@ -227,7 +227,7 @@ class PrivateKey:
         """
         :returns: Recoverable ECDSA signature, aka compact signature, in format (recovery_id, r, s)
         """
-        e = int.from_bytes(hasher(message), 'big')
+        e = int.from_bytes(hasher(message) if hasher else message, 'big')
         recovery_id, r, s = 0, 0, 0
         while not r or not s:
             k = PrivateKey()
@@ -307,7 +307,7 @@ def recover_public_key(signature: [int, int, int], message: bytes, hasher: Calla
     k_point = Point(k_x, k_y)
     # calculate the public key (A) corresponding to the user private key (a) used when signing
     # A = (sK - eG) / r
-    e = int.from_bytes(hasher(message), 'big')
+    e = int.from_bytes(hasher(message) if hasher else message, 'big')
     mod_inv_r = modular_inverse(r, curve.n)
     a_point = add(multiply(mod_inv_r * s, k_point), multiply(mod_inv_r * (-e % curve.n), curve.g))
     return PublicKey(a_point)
