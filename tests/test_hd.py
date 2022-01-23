@@ -1,7 +1,7 @@
 import pytest
 
 from bsvlib.hd.bip32 import Xpub, Xprv, derive, master_xprv_from_seed
-from bsvlib.hd.bip39 import WordList, mnemonic_from_entropy, seed_from_mnemonic
+from bsvlib.hd.bip39 import WordList, mnemonic_from_entropy, seed_from_mnemonic, validate_mnemonic
 
 _mnemonic = 'slice simple ring fluid capital exhaust will illegal march annual shift hood'
 _seed = '4fc3bea5ae2df6c5a93602e87085de5a7c1e94bb7ab5e6122364753cc51aa5e210c32aec1c58ed570c83084ec3b60b4ad69075bc62c05edb8e538ae2843f4f59'
@@ -113,3 +113,8 @@ def test_mnemonic():
     seed_passphrase = '1e8340ad778a2bbb1ccac4dd02e6985c888a0db0c40d9817998c0ef3da36e846b270f2c51ad67ac6f51183f567fd97c58a31d363296d5dc6245a0a3c4a3e83c5'
     assert seed_from_mnemonic(mnemonic).hex() == seed_default
     assert seed_from_mnemonic(mnemonic, passphrase='bitcoin').hex() == seed_passphrase
+
+    with pytest.raises(AssertionError, match=r'invalid mnemonic, bad entropy bit length'):
+        validate_mnemonic('license expire dragon express pulse behave sibling draft vessel')
+    with pytest.raises(AssertionError, match=r'invalid mnemonic, checksum mismatch'):
+        validate_mnemonic('dignity candy ostrich wide enrich bubble solid sun cannon deposit merge replace')

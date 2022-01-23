@@ -72,7 +72,18 @@ def mnemonic_from_entropy(entropy: Union[bytes, str, None] = None, lang: str = '
     return ' '.join([WordList.get_word(bits_to_bytes(index_bits), lang) for index_bits in indexes_bits])
 
 
-def seed_from_mnemonic(mnemonic: str, passphrase: str = '', prefix: str = 'mnemonic') -> bytes:
+def validate_mnemonic(mnemonic: str, lang: str = 'en'):
+    indexes: List[int] = [WordList.index_word(word, lang) for word in mnemonic.split(' ')]
+    bits: str = ''.join([bin(index)[2:].zfill(11) for index in indexes])
+    entropy_bit_length: int = len(bits) * 32 // 33
+    assert entropy_bit_length in BIP39_ENTROPY_BIT_LENGTH_LIST, 'invalid mnemonic, bad entropy bit length'
+    entropy_bits: str = bits[:entropy_bit_length]
+    checksum_bits: str = bytes_to_bits(sha256(bits_to_bytes(entropy_bits)))[:entropy_bit_length // 32]
+    assert checksum_bits == bits[entropy_bit_length:], 'invalid mnemonic, checksum mismatch'
+
+
+def seed_from_mnemonic(mnemonic: str, lang: str = 'en', passphrase: str = '', prefix: str = 'mnemonic') -> bytes:
+    validate_mnemonic(mnemonic, lang)
     hash_name = 'sha512'
     password = mnemonic.encode()
     salt = (prefix + passphrase).encode()
