@@ -79,7 +79,7 @@ def test_wordlist():
     with pytest.raises(AssertionError, match=r'index out of range'):
         WordList.get_word(2048)
     with pytest.raises(AssertionError, match=r'wordlist not supported'):
-        WordList.get_word(0, 'zh-cn')
+        WordList.get_word(0, 'zh-tw')
 
     assert WordList.index_word('abandon') == 0
     assert WordList.index_word('zoo') == 2047
@@ -115,3 +115,19 @@ def test_mnemonic():
         validate_mnemonic('license expire dragon express pulse behave sibling draft vessel')
     with pytest.raises(AssertionError, match=r'invalid mnemonic, checksum mismatch'):
         validate_mnemonic('dignity candy ostrich wide enrich bubble solid sun cannon deposit merge replace')
+
+    path = "m/44'/0'/0'/0/0"
+    mnemonic = '塔 恨 非 送 惨 右 娘 适 呵 二 溶 座 伸 徐 鼓'
+    seed = 'fb520b58b6db65172fb00322826a902463b0e6af6f2dfd400ce77b528e81f6cbc785835e7e7f7aec5368916b96607f2a1b348bfa483bf8d3a23acf744b4ce209'
+    assert seed_from_mnemonic(mnemonic, lang='zh-cn').hex() == seed
+    assert ckd(master_xprv_from_seed(seed_from_mnemonic(mnemonic, 'zh-cn')), path).address() == '1C5XJhzRNDDuPNzETmJFFhkU46s1bBFqyV'
+
+    mnemonic = '猛 念 回 风 自 将 大 鸟 说 揭 召 必 旱 济 挡 陆 染 昏'
+    seed = '1a9553b9a7d7a394841ca8f5883bf5366c4c7a8ace58b5d32bd291dd9bfa25072253e9904e943ffe426f334bd8275595a87c425f8713b619945155fd5e88a390'
+    assert seed_from_mnemonic(mnemonic, lang='zh-cn').hex() == seed
+    assert ckd(master_xprv_from_seed(seed_from_mnemonic(mnemonic, 'zh-cn')), path).address() == '1GeiN188BR499mp4JvT1EHD7MVUZ1jJVMj'
+
+    mnemonic = '部 街 缓 弯 醒 巧 传 文 馆 央 怕 纬 疾 沸 静 丘 促 罗 辅 追 勃'
+    seed = 'cd552980402550f9ec350cd63cb582d1087c333dbf5044c48ee0ec9f083636193b3738ae04d18198476904fdcd5955764b5f5630b0db0d35d311d0a0fd9b7e8d'
+    assert seed_from_mnemonic(mnemonic, lang='zh-cn').hex() == seed
+    assert ckd(master_xprv_from_seed(seed_from_mnemonic(mnemonic, 'zh-cn')), path).address() == '1PUaGha3pSPUwCT7JTLTXUdnL9wbvibU1u'

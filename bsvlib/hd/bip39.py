@@ -17,10 +17,14 @@ class WordList:
 
     path = os.path.join(os.path.dirname(__file__), 'wordlist')
     #
-    # en - english - https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt
+    # en
+    #   https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt
+    # zh-cn
+    #   https://github.com/bitcoin/bips/blob/master/bip-0039/chinese_simplified.txt
     #
     files: Dict[str, str] = {
         'en': os.path.join(path, 'english.txt'),
+        'zh-cn': os.path.join(path, 'chinese_simplified.txt'),
     }
     wordlist: Dict[str, List[str]] = {}
 
