@@ -1,6 +1,6 @@
 import pytest
 
-from bsvlib.hd.bip32 import Xpub, Xprv, derive, master_xprv_from_seed
+from bsvlib.hd.bip32 import Xpub, Xprv, ckd, master_xprv_from_seed
 from bsvlib.hd.bip39 import WordList, mnemonic_from_entropy, seed_from_mnemonic, validate_mnemonic
 
 _mnemonic = 'slice simple ring fluid capital exhaust will illegal march annual shift hood'
@@ -40,12 +40,6 @@ def test_xkey():
     assert str(Xpub(master_xpub).ckd('00000000')) == normal_xpub
     assert str(Xpub(master_xpub).ckd(b'\x00\x00\x00\x00')) == normal_xpub
 
-    assert str(Xprv(master_xprv).child('0')) == normal_xprv
-    assert str(Xprv(master_xprv).child("0'")) == hardened_xprv
-    assert str(Xpub(master_xpub).child('0')) == normal_xpub
-    with pytest.raises(AssertionError, match=r"can't make hardened derivation from xpub"):
-        Xpub(master_xpub).child("0'")
-
     wif = 'KxegHzrskmyDrSuymrQVEWbLjQRm5y7c9XJYoVFAtfi1uszycQX7'
     public_key_hex = '033394416f0d04d0758e002f6708dd121a4c02eae4fee8734fc359c27bd22a92bd'
     address = '1LRax3BdP3SaSnGoD2pkAMTrbuATtog7Kj'
@@ -62,16 +56,19 @@ def test_xkey():
     assert str(master_xprv_from_seed(_seed)) == master_xprv
 
 
-def test_derive():
-    assert derive(Xprv(master_xprv), "m") == Xprv(master_xprv)
-    assert derive(Xprv(master_xprv), ".") == Xprv(master_xprv)
-    assert derive(Xprv(master_xprv), "m/0'") == Xprv(hardened_xprv)
-    assert derive(Xprv(master_xprv), "./0'") == Xprv(hardened_xprv)
-    assert derive(Xpub(master_xpub), 'm/0') == Xpub(normal_xpub)
-    assert derive(Xpub(master_xpub), './0') == Xpub(normal_xpub)
+def test_ckd():
+    assert ckd(Xprv(master_xprv), "m") == Xprv(master_xprv)
+    assert ckd(Xprv(master_xprv), ".") == Xprv(master_xprv)
+    assert ckd(Xprv(master_xprv), "m/0'") == Xprv(hardened_xprv)
+    assert ckd(Xprv(master_xprv), "./0'") == Xprv(hardened_xprv)
+    assert ckd(Xpub(master_xpub), 'm/0') == Xpub(normal_xpub)
+    assert ckd(Xpub(master_xpub), './0') == Xpub(normal_xpub)
 
     with pytest.raises(AssertionError, match=r'absolute path for non-master key'):
-        derive(Xpub(normal_xpub), 'm/0')
+        ckd(Xpub(normal_xpub), 'm/0')
+
+    with pytest.raises(AssertionError, match=r"can't make hardened derivation from xpub"):
+        ckd(Xpub(master_xpub), "m/0'")
 
 
 def test_wordlist():

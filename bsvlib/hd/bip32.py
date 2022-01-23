@@ -77,9 +77,6 @@ class Xpub(Xkey):
 
         return Xpub(payload)
 
-    def child(self, step: str) -> 'Xpub':
-        return self.ckd(step_to_index(step))
-
     def public_key(self) -> PublicKey:
         return self.key
 
@@ -130,9 +127,6 @@ class Xprv(Xkey):
 
         return Xprv(payload)
 
-    def child(self, step: str) -> 'Xprv':
-        return self.ckd(step_to_index(step))
-
     def xpub(self) -> Xpub:
         return Xpub.from_xprv(self)
 
@@ -174,7 +168,7 @@ def step_to_index(step: str) -> int:
     return index
 
 
-def derive(xkey: Union[Xprv, Xpub], path: str) -> Union[Xprv, Xpub]:
+def ckd(xkey: Union[Xprv, Xpub], path: str) -> Union[Xprv, Xpub]:
     """
     derive an extended key according to path like "m/44'/0'/1'/0/10" (absolute) or "./0/10" (relative)
     """
@@ -187,7 +181,7 @@ def derive(xkey: Union[Xprv, Xpub], path: str) -> Union[Xprv, Xpub]:
 
     child = xkey
     for step in steps[1:]:
-        child = xkey.child(step)
+        child = child.ckd(step_to_index(step))
     return child
 
 
