@@ -17,7 +17,7 @@ hardened_xprv = 'xprv9v35D6d4y8dP9r1N2koQ49hwzk8EDT4msMFAXGertWPxQDByPqZ1e3k6U34
 hardened_xpub = 'xpub692Rcc9xoWBgNL5q8nLQRHegYmxicundEaAmKf4USqvwH1X7wNsGBr4aKHLeKDA5ghqECjBErUwLaYZ6As5PpqsFJbZD3jyBWrk6QKG8QQX'
 
 
-def test_bip32():
+def test_xkey():
     with pytest.raises(TypeError, match=r'unsupported extended key type'):
         # noinspection PyTypeChecker
         Xpub(1)

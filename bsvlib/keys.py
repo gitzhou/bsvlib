@@ -9,7 +9,7 @@ from .base58 import base58check_encode
 from .constants import Chain, CHAIN_ADDRESS_PREFIX_DICT, CHAIN_WIF_PREFIX_DICT
 from .constants import NUMBER_BYTE_LENGTH
 from .constants import PUBLIC_KEY_BYTE_LENGTH_LIST, PUBLIC_KEY_COMPRESSED_PREFIX_LIST, PUBLIC_KEY_UNCOMPRESSED_PREFIX
-from .constants import PUBLIC_KEY_COMPRESSED_BYTE_LENGTH, PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH, PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX_DICT
+from .constants import PUBLIC_KEY_COMPRESSED_BYTE_LENGTH, PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH, PUBLIC_KEY_COMPRESSED_PREFIX_DICT
 from .curve import Point
 from .curve import curve, get_y, modular_inverse, add, multiply
 from .hash import hash160, hash256
@@ -58,7 +58,7 @@ class PublicKey:
         compressed = self.compressed if compressed is None else compressed
         x, y = self.point.x, self.point.y
         if compressed:
-            return PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX_DICT[y % 2 == 0] + int.to_bytes(x, NUMBER_BYTE_LENGTH, 'big')
+            return PUBLIC_KEY_COMPRESSED_PREFIX_DICT[y % 2] + int.to_bytes(x, NUMBER_BYTE_LENGTH, 'big')
         return PUBLIC_KEY_UNCOMPRESSED_PREFIX + int.to_bytes(x, NUMBER_BYTE_LENGTH, 'big') + int.to_bytes(y, NUMBER_BYTE_LENGTH, 'big')
 
     def hex(self, compressed: Optional[bool] = None) -> str:
