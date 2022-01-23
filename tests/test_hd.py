@@ -1,6 +1,6 @@
 import pytest
 
-from bsvlib.hd.bip32 import Xpub, Xprv, derive
+from bsvlib.hd.bip32 import Xpub, Xprv, derive, master_xprv_from_seed
 from bsvlib.hd.bip39 import WordList, mnemonic_from_entropy, seed_from_mnemonic
 
 _mnemonic = 'slice simple ring fluid capital exhaust will illegal march annual shift hood'
@@ -58,6 +58,8 @@ def test_xkey():
 
     assert Xprv.from_seed(_seed) == Xprv(master_xprv)
     assert Xprv.from_seed(bytes.fromhex(_seed)) == Xprv(master_xprv)
+
+    assert str(master_xprv_from_seed(_seed)) == master_xprv
 
 
 def test_derive():

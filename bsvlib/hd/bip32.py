@@ -3,6 +3,7 @@ from hashlib import sha512
 from typing import Union
 
 from ..base58 import base58check_decode, base58check_encode
+from ..constants import BIP32_SEED_BYTE_LENGTH
 from ..constants import Chain, XKEY_BYTE_LENGTH, XKEY_PREFIX_LIST, PUBLIC_KEY_COMPRESSED_PREFIX_LIST
 from ..constants import XPUB_PREFIX_CHAIN_DICT, XPRV_PREFIX_CHAIN_DICT, CHAIN_XPUB_PREFIX_DICT, CHAIN_XPRV_PREFIX_DICT
 from ..curve import curve, add, multiply
@@ -76,8 +77,8 @@ class Xpub(Xkey):
 
         return Xpub(payload)
 
-    def child(self, path: str) -> 'Xpub':
-        return self.ckd(get_index(path))
+    def child(self, step: str) -> 'Xpub':
+        return self.ckd(step_to_index(step))
 
     def public_key(self) -> PublicKey:
         return self.key
@@ -129,8 +130,8 @@ class Xprv(Xkey):
 
         return Xprv(payload)
 
-    def child(self, path: str) -> 'Xprv':
-        return self.ckd(get_index(path))
+    def child(self, step: str) -> 'Xprv':
+        return self.ckd(step_to_index(step))
 
     def xpub(self) -> Xpub:
         return Xpub.from_xprv(self)
@@ -148,6 +149,7 @@ class Xprv(Xkey):
     def from_seed(cls, seed: Union[str, bytes], chain: Chain = Chain.MAIN):
         if isinstance(seed, str):
             seed = bytes.fromhex(seed)
+        assert len(seed) == BIP32_SEED_BYTE_LENGTH, 'invalid seed byte length'
 
         payload: bytes = CHAIN_XPRV_PREFIX_DICT.get(chain)
         payload += b'\x00'
@@ -161,14 +163,14 @@ class Xprv(Xkey):
         return Xprv(payload)
 
 
-def get_index(sub_path: str) -> int:
+def step_to_index(step: str) -> int:
     """
-    convert sub path "0" (normal derivation) or "0'" (hardened derivation) into child index
+    convert step (sub path) "xx" (normal derivation) or "xx'" (hardened derivation) into child index
     """
-    assert len(sub_path), 'invalid sub path'
-    hardened: bool = sub_path[-1] == "'"
-    index: int = (0x80000000 if hardened else 0) + int(sub_path[:-1] if hardened else sub_path)
-    assert 0 <= index < 0xffffffff, 'sub path out of range'
+    assert len(step), 'invalid step'
+    hardened: bool = step[-1] == "'"
+    index: int = (0x80000000 if hardened else 0) + int(step[:-1] if hardened else step)
+    assert 0 <= index < 0xffffffff, 'step out of range'
     return index
 
 
@@ -176,14 +178,18 @@ def derive(xkey: Union[Xprv, Xpub], path: str) -> Union[Xprv, Xpub]:
     """
     derive an extended key according to path like "m/44'/0'/1'/0/10" (absolute) or "./0/10" (relative)
     """
-    sub_paths = path.split('/')
-    assert sub_paths and sub_paths[0] in ['m', '.']
+    steps = path.split('/')
+    assert steps and steps[0] in ['m', '.']
 
-    if sub_paths[0] == 'm':
+    if steps[0] == 'm':
         # should be master key
         assert xkey.depth == 0 and xkey.fingerprint == b'\x00\x00\x00\x00' and xkey.index == 0, 'absolute path for non-master key'
 
     child = xkey
-    for sub_path in sub_paths[1:]:
-        child = xkey.child(sub_path)
+    for step in steps[1:]:
+        child = xkey.child(step)
     return child
+
+
+def master_xprv_from_seed(seed: Union[str, bytes], chain: Chain = Chain.MAIN) -> Xprv:
+    return Xprv.from_seed(seed, chain)
