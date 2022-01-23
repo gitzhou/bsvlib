@@ -1,6 +1,11 @@
 import os
 from contextlib import suppress
+from hashlib import pbkdf2_hmac
+from secrets import randbits
 from typing import List, Dict, Union
+
+from ..hash import sha256
+from ..utils import bytes_to_bits, bits_to_bytes
 
 
 class WordList:
@@ -48,3 +53,32 @@ class WordList:
         with suppress(Exception):
             return WordList.words[lang].index(word)
         raise ValueError('invalid word')
+
+
+ENTROPY_BIT_LENGTH_LIST: List[int] = [128, 160, 192, 224, 256]
+DEFAULT_ENTROPY_BIT_LENGTH: int = 128
+
+
+def mnemonic_from_entropy(entropy: Union[bytes, str, None] = None, lang: str = 'en') -> str:
+    if entropy:
+        assert type(entropy).__name__ in ['bytes', 'str'], 'unsupported entropy type'
+        entropy_bytes = entropy if isinstance(entropy, bytes) else bytes.fromhex(entropy)
+    else:
+        # random a new 128 bits entropy --> 12 words mnemonic
+        entropy_bytes = randbits(DEFAULT_ENTROPY_BIT_LENGTH).to_bytes(DEFAULT_ENTROPY_BIT_LENGTH // 8, 'big')
+    entropy_bits: str = bytes_to_bits(entropy_bytes)
+    assert len(entropy_bits) in ENTROPY_BIT_LENGTH_LIST, 'invalid entropy bit length'
+    checksum_bits: str = bytes_to_bits(sha256(entropy_bytes))[:len(entropy_bits) // 32]
+
+    bits: str = entropy_bits + checksum_bits
+    indexes_bits: List[str] = [bits[i:i + 11] for i in range(0, len(bits), 11)]
+    return ' '.join([WordList.get_word(bits_to_bytes(index_bits), lang) for index_bits in indexes_bits])
+
+
+def seed_from_mnemonic(mnemonic: str, passphrase: str = '', prefix: str = 'mnemonic') -> bytes:
+    hash_name = 'sha512'
+    password = mnemonic.encode()
+    salt = (prefix + passphrase).encode()
+    iterations = 2048
+    dklen = 64
+    return pbkdf2_hmac(hash_name, password, salt, iterations, dklen)

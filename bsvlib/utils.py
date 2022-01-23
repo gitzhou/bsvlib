@@ -1,11 +1,11 @@
 import re
 from base64 import b64encode, b64decode
 from contextlib import suppress
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 import requests
 
-from .base58 import base58check_decode
+from .base58 import base58check_decode, unsigned_to_bytes
 from .constants import Chain, ADDRESS_PREFIX_CHAIN_DICT, WIF_PREFIX_CHAIN_DICT, OP, NUMBER_BYTE_LENGTH, HTTP_REQUEST_TIMEOUT
 from .curve import curve
 
@@ -193,3 +193,21 @@ def deserialize_ecdsa_recoverable(signature: str) -> Tuple[Tuple[int, int, int],
         prefix -= 4
     recovery_id = prefix - 27
     return (recovery_id, r, s), compressed
+
+
+def bytes_to_bits(value: Union[str, bytes]) -> str:
+    """
+    convert bytes to binary 0/1 string
+    """
+    b: bytes = value if isinstance(value, bytes) else bytes.fromhex(value)
+    bits: str = bin(int.from_bytes(b, 'big'))[2:]
+    if len(bits) < len(b) * 8:
+        bits = '0' * (len(b) * 8 - len(bits)) + bits
+    return bits
+
+
+def bits_to_bytes(value: str) -> bytes:
+    """
+    convert binary 0/1 string to bytes
+    """
+    return unsigned_to_bytes(int(value, 2))

@@ -3,6 +3,7 @@ import pytest
 from bsvlib.base58 import base58check_encode, b58_encode
 from bsvlib.constants import Chain
 from bsvlib.curve import curve
+from bsvlib.utils import bytes_to_bits, bits_to_bytes
 from bsvlib.utils import decode_address, decode_wif, get_pushdata_code, validate_address, resolve_address
 from bsvlib.utils import serialize_ecdsa_recoverable, deserialize_ecdsa_recoverable
 from bsvlib.utils import unsigned_to_varint, deserialize_ecdsa_der, serialize_ecdsa_der
@@ -117,3 +118,11 @@ def test_recoverable_serialization():
 
     assert serialize_ecdsa_recoverable((recovery_id, r, s)) == serialized
     assert deserialize_ecdsa_recoverable(serialized)[0] == (recovery_id, r, s)
+
+
+def test_bits():
+    assert bytes_to_bits(b'\x00') == '00000000'
+    assert bytes_to_bits('12') == '00010010'
+
+    assert bits_to_bytes('101') == b'\x05'
+    assert bits_to_bytes('100010101010111') == b'\x45\x57'
