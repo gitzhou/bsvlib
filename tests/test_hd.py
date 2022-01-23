@@ -1,6 +1,7 @@
 import pytest
 
 from bsvlib.hd.bip32 import Xpub, Xprv, derive
+from bsvlib.hd.bip39 import WordList
 
 # slice simple ring fluid capital exhaust will illegal march annual shift hood
 seed = '4fc3bea5ae2df6c5a93602e87085de5a7c1e94bb7ab5e6122364753cc51aa5e210c32aec1c58ed570c83084ec3b60b4ad69075bc62c05edb8e538ae2843f4f59'
@@ -69,3 +70,19 @@ def test_derive():
 
     with pytest.raises(AssertionError, match=r'absolute path for non-master key'):
         derive(Xpub(normal_xpub), 'm/0')
+
+
+def test_wordlist():
+    assert WordList.get_word(0) == 'abandon'
+    assert WordList.get_word(9) == 'abuse'
+    assert WordList.get_word(b'\x01\x02') == 'cake'
+    assert WordList.get_word(2047) == 'zoo'
+    with pytest.raises(AssertionError, match=r'index out of range'):
+        WordList.get_word(2048)
+    with pytest.raises(AssertionError, match=r'wordlist not supported'):
+        WordList.get_word(0, 'zh-cn')
+
+    assert WordList.index_word('abandon') == 0
+    assert WordList.index_word('zoo') == 2047
+    with pytest.raises(ValueError, match=r'invalid word'):
+        WordList.index_word('hi')
