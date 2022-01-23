@@ -34,7 +34,7 @@ class WhatsOnChain(Provider):
             address: str = self.parse_address(**kwargs)
             r: Dict = self.get(url=f'{self.url}/{self.chain}/address/{address}/unspent')
             unspents: List[Dict] = []
-            for item in r:
+            for item in r:  # pragma: no cover
                 unspent = {'txid': item['tx_hash'], 'vout': item['tx_pos'], 'satoshi': item['value'], 'height': item['height']}
                 unspent.update(kwargs)
                 unspents.append(unspent)

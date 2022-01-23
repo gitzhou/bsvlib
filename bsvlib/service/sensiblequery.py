@@ -31,9 +31,9 @@ class SensibleQuery(Provider):
             address: str = kwargs.get('address') or public_key.address()
             r: Dict = self.get(url=f'{self.url}/address/{address}/utxo', params={'cursor': 0, 'size': 5120})
             unspents: List[Dict] = []
-            for item in r:
+            for item in r:  # pragma: no cover
                 unspent = {'txid': item['txid'], 'vout': item['vout'], 'satoshi': item['satoshi'], 'height': item['height']}
-                if item['scriptType'] in ['21ac', '41ac']:  # pragma: no cover
+                if item['scriptType'] in ['21ac', '41ac']:
                     # P2PK requires public key to set locking script
                     if not public_key:
                         continue
