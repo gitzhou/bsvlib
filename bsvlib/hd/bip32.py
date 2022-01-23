@@ -9,7 +9,7 @@ from ..curve import curve, add, multiply
 from ..keys import PublicKey, PrivateKey
 
 
-class XKey:
+class Xkey:
     """
     [  : 4] prefix
     [ 4: 5] depth
@@ -37,7 +37,7 @@ class XKey:
         assert self.prefix in XKEY_PREFIX_LIST, 'invalid extended key prefix'
 
     def __eq__(self, o: object) -> bool:
-        if isinstance(o, XKey):
+        if isinstance(o, Xkey):
             return self.payload == o.payload
         return super().__eq__(o)  # pragma: no cover
 
@@ -45,7 +45,7 @@ class XKey:
         return base58check_encode(self.payload)
 
 
-class XPub(XKey):
+class Xpub(Xkey):
 
     def __init__(self, xpub: Union[str, bytes]):
         super().__init__(xpub)
@@ -54,7 +54,7 @@ class XPub(XKey):
         assert self.payload[45:46] in PUBLIC_KEY_COMPRESSED_PREFIX_LIST, 'invalid public key in xpub'
         self.key: PublicKey = PublicKey(self.key_bytes)
 
-    def ckd(self, index: Union[int, str, bytes]) -> 'XPub':
+    def ckd(self, index: Union[int, str, bytes]) -> 'Xpub':
         if isinstance(index, int):
             index = index.to_bytes(4, 'big')
         elif isinstance(index, str):
@@ -74,9 +74,9 @@ class XPub(XKey):
         payload += h[32:]
         payload += child.serialize()
 
-        return XPub(payload)
+        return Xpub(payload)
 
-    def child(self, path: str) -> 'XPub':
+    def child(self, path: str) -> 'Xpub':
         return self.ckd(get_index(path))
 
     def public_key(self) -> PublicKey:
@@ -86,19 +86,19 @@ class XPub(XKey):
         return self.key.address(chain=self.chain)
 
     @classmethod
-    def from_xprv(cls, xprv: Union[str, bytes, 'XPrv']) -> 'XPub':
-        if not isinstance(xprv, XPrv):
-            xprv = XPrv(xprv)
+    def from_xprv(cls, xprv: Union[str, bytes, 'Xprv']) -> 'Xpub':
+        if not isinstance(xprv, Xprv):
+            xprv = Xprv(xprv)
         payload: bytes = CHAIN_XPUB_PREFIX_DICT.get(xprv.chain)
         payload += xprv.depth.to_bytes(1, 'big')
         payload += xprv.fingerprint
         payload += xprv.index.to_bytes(4, 'big')
         payload += xprv.chain_code
         payload += xprv.key.public_key().serialize()
-        return XPub(payload)
+        return Xpub(payload)
 
 
-class XPrv(XKey):
+class Xprv(Xkey):
 
     def __init__(self, xprv: Union[str, bytes]):
         super().__init__(xprv)
@@ -107,7 +107,7 @@ class XPrv(XKey):
         assert self.payload[45] == 0, 'invalid private key in xprv'
         self.key: PrivateKey = PrivateKey(self.key_bytes[1:], chain=self.chain)
 
-    def ckd(self, index: Union[int, str, bytes]) -> 'XPrv':
+    def ckd(self, index: Union[int, str, bytes]) -> 'Xprv':
         if isinstance(index, int):
             index = index.to_bytes(4, 'big')
         elif isinstance(index, str):
@@ -127,13 +127,13 @@ class XPrv(XKey):
         payload += h[32:]
         payload += b'\x00' + child.serialize()
 
-        return XPrv(payload)
+        return Xprv(payload)
 
-    def child(self, path: str) -> 'XPrv':
+    def child(self, path: str) -> 'Xprv':
         return self.ckd(get_index(path))
 
-    def xpub(self) -> XPub:
-        return XPub.from_xprv(self)
+    def xpub(self) -> Xpub:
+        return Xpub.from_xprv(self)
 
     def private_key(self) -> PrivateKey:
         return self.key
@@ -158,15 +158,32 @@ class XPrv(XKey):
         payload += h[32:]
         payload += b'\x00' + h[:32]
 
-        return XPrv(payload)
+        return Xprv(payload)
 
 
-def get_index(path: str) -> int:
+def get_index(sub_path: str) -> int:
     """
-    convert path "0" (normal derivation) or "0'" (hardened derivation) into child index
+    convert sub path "0" (normal derivation) or "0'" (hardened derivation) into child index
     """
-    assert len(path), 'invalid path'
-    hardened: bool = path[-1] == "'"
-    index: int = (0x80000000 if hardened else 0) + int(path[:-1] if hardened else path)
-    assert 0 <= index < 0xffffffff, 'path out of range'
+    assert len(sub_path), 'invalid sub path'
+    hardened: bool = sub_path[-1] == "'"
+    index: int = (0x80000000 if hardened else 0) + int(sub_path[:-1] if hardened else sub_path)
+    assert 0 <= index < 0xffffffff, 'sub path out of range'
     return index
+
+
+def derive(xkey: Union[Xprv, Xpub], path: str) -> Union[Xprv, Xpub]:
+    """
+    derive an extended key according to path like "m/44'/0'/1'/0/10" (absolute) or "./0/10" (relative)
+    """
+    sub_paths = path.split('/')
+    assert sub_paths and sub_paths[0] in ['m', '.']
+
+    if sub_paths[0] == 'm':
+        # should be master key
+        assert xkey.depth == 0 and xkey.fingerprint == b'\x00\x00\x00\x00' and xkey.index == 0, 'absolute path for non-master key'
+
+    child = xkey
+    for sub_path in sub_paths[1:]:
+        child = xkey.child(sub_path)
+    return child
