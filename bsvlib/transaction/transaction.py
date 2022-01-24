@@ -1,6 +1,7 @@
-import math
 from io import BytesIO
 from typing import List, Optional, Union, Dict, Any
+
+import math
 
 from .unspent import Unspent
 from ..constants import SIGHASH, Chain

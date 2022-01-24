@@ -6,12 +6,10 @@ TRANSACTION_SEQUENCE: int = int(os.getenv('BSVLIB_TRANSACTION_SEQUENCE') or 0xff
 TRANSACTION_VERSION: int = int(os.getenv('BSVLIB_TRANSACTION_VERSION') or 1)
 TRANSACTION_LOCKTIME: int = int(os.getenv('BSVLIB_TRANSACTION_LOCKTIME') or 0)
 TRANSACTION_FEE_RATE: float = float(os.getenv('BSVLIB_TRANSACTION_FEE_RATE') or 0.5)  # satoshi per byte
-
 P2PKH_DUST_LIMIT: int = int(os.getenv('BSVLIB_P2PKH_DUST_LIMIT') or 135)
-
 HTTP_REQUEST_TIMEOUT: int = int(os.getenv('BSVLIB_HTTP_REQUEST_TIMEOUT') or 30)
-
 THREAD_POOL_MAX_EXECUTORS: int = int(os.getenv('BSVLIB_THREAD_POOL_MAX_EXECUTORS') or 10)
+BIP39_ENTROPY_DEFAULT_BIT_LENGTH: int = int(os.getenv('BSVLIB_BIP39_ENTROPY_DEFAULT_BIT_LENGTH') or 128)
 
 
 class Chain(str, Enum):
@@ -35,41 +33,95 @@ class SIGHASH(int, Enum):
     SINGLE_ANYONECANPAY_FORKID = SINGLE_FORKID | ANYONECANPAY
 
 
-CHAIN_ADDRESS_PREFIX_DICT: Dict[Chain, bytes] = {
-    Chain.MAIN: b'\x00',
-    Chain.TEST: b'\x6f',
-}
-
-ADDRESS_PREFIX_CHAIN_DICT: Dict[bytes, Chain] = {
-    b'\x00': Chain.MAIN,
-    b'\x6f': Chain.TEST,
-}
-
-CHAIN_WIF_PREFIX_DICT: Dict[Chain, bytes] = {
-    Chain.MAIN: b'\x80',
-    Chain.TEST: b'\xef',
-}
-
-WIF_PREFIX_CHAIN_DICT: Dict[bytes, Chain] = {
-    b'\x80': Chain.MAIN,
-    b'\xef': Chain.TEST,
-}
-
 NUMBER_BYTE_LENGTH: int = 32
 
+#
+# P2PKH address
+#
+ADDRESS_MAIN_PREFIX: bytes = b'\x00'
+ADDRESS_TEST_PREFIX: bytes = b'\x6f'
+CHAIN_ADDRESS_PREFIX_DICT: Dict[Chain, bytes] = {
+    Chain.MAIN: ADDRESS_MAIN_PREFIX,
+    Chain.TEST: ADDRESS_TEST_PREFIX,
+}
+ADDRESS_PREFIX_CHAIN_DICT: Dict[bytes, Chain] = {
+    ADDRESS_MAIN_PREFIX: Chain.MAIN,
+    ADDRESS_TEST_PREFIX: Chain.TEST,
+}
+
+#
+# WIF
+#
+WIF_MAIN_PREFIX: bytes = b'\x80'
+WIF_TEST_PREFIX: bytes = b'\xef'
+CHAIN_WIF_PREFIX_DICT: Dict[Chain, bytes] = {
+    Chain.MAIN: WIF_MAIN_PREFIX,
+    Chain.TEST: WIF_TEST_PREFIX,
+}
+WIF_PREFIX_CHAIN_DICT: Dict[bytes, Chain] = {
+    WIF_MAIN_PREFIX: Chain.MAIN,
+    WIF_TEST_PREFIX: Chain.TEST,
+}
+
+#
+# public key
+#
 PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX: bytes = b'\x02'
 PUBLIC_KEY_COMPRESSED_ODD_Y_PREFIX: bytes = b'\x03'
 PUBLIC_KEY_COMPRESSED_PREFIX_LIST: List[bytes] = [PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX, PUBLIC_KEY_COMPRESSED_ODD_Y_PREFIX]
-PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX_DICT: Dict[bool, bytes] = {
-    True: PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX,
-    False: PUBLIC_KEY_COMPRESSED_ODD_Y_PREFIX,
+PUBLIC_KEY_COMPRESSED_PREFIX_DICT: Dict[int, bytes] = {
+    0: PUBLIC_KEY_COMPRESSED_EVEN_Y_PREFIX,  # even
+    1: PUBLIC_KEY_COMPRESSED_ODD_Y_PREFIX,  # odd
 }
-PUBLIC_KEY_UNCOMPRESSED_PREFIX: bytes = b'\x04'
 PUBLIC_KEY_COMPRESSED_BYTE_LENGTH: int = 33
+PUBLIC_KEY_UNCOMPRESSED_PREFIX: bytes = b'\x04'
 PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH: int = 65
 PUBLIC_KEY_BYTE_LENGTH_LIST: List[int] = [PUBLIC_KEY_COMPRESSED_BYTE_LENGTH, PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH]
-
 PUBLIC_KEY_HASH_BYTE_LENGTH: int = 20
+
+#
+# extended private key
+#
+XPRV_MAIN_PREFIX: bytes = b'\x04\x88\xAD\xE4'
+XPRV_TEST_PREFX: bytes = b'\x04\x35\x83\x94'
+XPRV_PREFIX_LIST: List[bytes] = [XPRV_MAIN_PREFIX, XPRV_TEST_PREFX]
+CHAIN_XPRV_PREFIX_DICT: Dict[Chain, bytes] = {
+    Chain.MAIN: XPRV_MAIN_PREFIX,
+    Chain.TEST: XPRV_TEST_PREFX,
+}
+XPRV_PREFIX_CHAIN_DICT: Dict[bytes, Chain] = {
+    XPRV_MAIN_PREFIX: Chain.MAIN,
+    XPRV_TEST_PREFX: Chain.TEST,
+}
+
+#
+# extended public key
+#
+XPUB_MAIN_PREFIX: bytes = b'\x04\x88\xB2\x1E'
+XPUB_TEST_PREFIX: bytes = b'\x04\x35\x87\xCF'
+XPUB_PREFIX_LIST: List[bytes] = [XPUB_MAIN_PREFIX, XPUB_TEST_PREFIX]
+CHAIN_XPUB_PREFIX_DICT: Dict[Chain, bytes] = {
+    Chain.MAIN: XPUB_MAIN_PREFIX,
+    Chain.TEST: XPUB_TEST_PREFIX,
+}
+XPUB_PREFIX_CHAIN_DICT: Dict[bytes, Chain] = {
+    XPUB_MAIN_PREFIX: Chain.MAIN,
+    XPUB_TEST_PREFIX: Chain.TEST,
+}
+
+#
+# extended key
+#
+XKEY_BYTE_LENGTH: int = 78
+XKEY_PREFIX_LIST: List[bytes] = XPRV_PREFIX_LIST + XPUB_PREFIX_LIST
+#
+# BIP32
+#
+BIP32_SEED_BYTE_LENGTH: int = 64
+#
+# BIP39
+#
+BIP39_ENTROPY_BIT_LENGTH_LIST: List[int] = [128, 160, 192, 224, 256]
 
 
 class OP(bytes, Enum):
