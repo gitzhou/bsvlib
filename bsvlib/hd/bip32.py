@@ -141,6 +141,9 @@ class Xprv(Xkey):
 
     @classmethod
     def from_seed(cls, seed: Union[str, bytes], chain: Chain = Chain.MAIN):
+        """
+        derive master extended private key from seed
+        """
         if isinstance(seed, str):
             seed = bytes.fromhex(seed)
         assert len(seed) == BIP32_SEED_BYTE_LENGTH, 'invalid seed byte length'
@@ -157,13 +160,17 @@ class Xprv(Xkey):
         return Xprv(payload)
 
 
-def step_to_index(step: str) -> int:
+def step_to_index(step: Union[str, int]) -> int:
     """
     convert step (sub path) "xx" (normal derivation) or "xx'" (hardened derivation) into child index
     """
-    assert len(step), 'invalid step'
-    hardened: bool = step[-1] == "'"
-    index: int = (0x80000000 if hardened else 0) + int(step[:-1] if hardened else step)
+    assert type(step).__name__ in ['str', 'int'], 'unsupported step type'
+    if isinstance(step, str):
+        assert len(step), 'invalid step'
+        hardened: bool = step[-1] == "'"
+        index: int = (0x80000000 if hardened else 0) + int(step[:-1] if hardened else step)
+    else:
+        index: int = step
     assert 0 <= index < 0xffffffff, 'step out of range'
     return index
 
@@ -172,7 +179,7 @@ def ckd(xkey: Union[Xprv, Xpub], path: str) -> Union[Xprv, Xpub]:
     """
     derive an extended key according to path like "m/44'/0'/1'/0/10" (absolute) or "./0/10" (relative)
     """
-    steps = path.split('/')
+    steps = path.strip(' ').strip('/').split('/')
     assert steps and steps[0] in ['m', '.']
 
     if steps[0] == 'm':
