@@ -130,6 +130,8 @@ print(private_key.decrypt_text(encrypted))
 
 7. Process HD wallet derivation
 
+![image](https://user-images.githubusercontent.com/1585505/150875831-2663e158-b00d-4089-8276-1ad72e335d28.png)
+
 ```python
 from typing import List
 
