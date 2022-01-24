@@ -15,6 +15,7 @@ A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
 - Ability to adapt to different service providers
 - Fully ECDSA implementation
 - ECDH and Electrum ECIES (aka BIE1) implementation
+- HD implementation (BIP-32, BIP-39, BIP-44)
 
 ## Installation
 
@@ -127,9 +128,39 @@ print(encrypted)
 print(private_key.decrypt_text(encrypted))
 ```
 
+7. Process HD wallet derivation
+
+```python
+from typing import List
+
+from bsvlib.hd import mnemonic_from_entropy, Xprv, derive_from_mnemonic
+
+#
+# HD derivation
+#
+entropy = 'cd9b819d9c62f0027116c1849e7d497f'
+
+# snow swing guess decide congress abuse session subway loyal view false zebra
+mnemonic: str = mnemonic_from_entropy(entropy)
+print(mnemonic)
+
+keys: List[Xprv] = derive_from_mnemonic(mnemonic, path="m/44'/0'/0'", change=1, index_start=0, index_end=5)
+for key in keys:
+    print(key.address(), key.private_key().wif())
+
+#
+# random mnemonic
+#
+print()
+print(mnemonic_from_entropy())
+print(mnemonic_from_entropy(lang='en'))
+print(mnemonic_from_entropy(lang='zh-cn'))
+```
+
 ## Credits
 
-- [@AustEcon](https://github.com/AustEcon/bitsv)
+- [AustEcon / bitsv](https://github.com/AustEcon/bitsv)
+- [btclib-org / btclib](https://github.com/btclib-org/btclib)
 - [@xiangpengm](https://github.com/xiangpengm)
 
 ## Donation
