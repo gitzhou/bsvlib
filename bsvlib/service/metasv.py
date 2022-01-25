@@ -18,12 +18,14 @@ class MetaSV(Provider):
         self.headers.update({'Authorization': f'Bearer {self.token}', })
 
     def _get_unspents(self, address: str, flag: Optional[int] = None, confirmed: Optional[bool] = None) -> Union[Dict, List[Dict]]:
-        params = {}
-        if flag:
-            params['flag'] = flag
-        if confirmed is not None:  # pragma: no cover
-            params['confirmed'] = confirmed.__str__().lower()
-        return self.get(url=f'{self.url}/address/{address}/utxo', params=params)
+        with suppress(Exception):
+            params = {}
+            if flag:
+                params['flag'] = flag
+            if confirmed is not None:  # pragma: no cover
+                params['confirmed'] = confirmed.__str__().lower()
+            return self.get(url=f'{self.url}/address/{address}/utxo', params=params)
+        return []  # pragma: no cover
 
     def get_unspents(self, **kwargs) -> List[Dict]:
         """
@@ -40,7 +42,7 @@ class MetaSV(Provider):
             # parsing
             unspents: List[Dict] = []
             for item in total_unspents:  # pragma: no cover
-                unspent = {'vout': item['outIndex'], 'satoshi': item['value']}
+                unspent = {'txid': item['txid'], 'vout': item['outIndex'], 'satoshi': item['value'], 'height': item['height']}
                 unspent.update(kwargs)
                 unspents.append(unspent)
             return unspents
