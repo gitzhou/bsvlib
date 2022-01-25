@@ -1,6 +1,6 @@
 import os
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 TRANSACTION_SEQUENCE: int = int(os.getenv('BSVLIB_TRANSACTION_SEQUENCE') or 0xffffffff)
 TRANSACTION_VERSION: int = int(os.getenv('BSVLIB_TRANSACTION_VERSION') or 1)
@@ -10,6 +10,7 @@ P2PKH_DUST_LIMIT: int = int(os.getenv('BSVLIB_P2PKH_DUST_LIMIT') or 135)
 HTTP_REQUEST_TIMEOUT: int = int(os.getenv('BSVLIB_HTTP_REQUEST_TIMEOUT') or 30)
 THREAD_POOL_MAX_EXECUTORS: int = int(os.getenv('BSVLIB_THREAD_POOL_MAX_EXECUTORS') or 10)
 BIP39_ENTROPY_DEFAULT_BIT_LENGTH: int = int(os.getenv('BSVLIB_BIP39_ENTROPY_DEFAULT_BIT_LENGTH') or 128)
+METASV_TOKEN: Optional[str] = os.getenv('BSVLIB_METASV_TOKEN') or os.getenv('METASV_TOKEN')
 
 
 class Chain(str, Enum):
