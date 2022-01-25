@@ -10,8 +10,8 @@ from .transaction.transaction import Transaction, TxOutput, InsufficientFunds
 from .transaction.unspent import Unspent
 
 
-def get_unspents_wrapper(d: Dict) -> List['Unspent']:
-    return Unspent.get_unspents(**d)
+def get_unspents_wrapper(chain: Chain, provider: Provider, d: Dict) -> List['Unspent']:
+    return Unspent.get_unspents(chain, provider, **d)
 
 
 def get_balance_wrapper(chain: Chain, provider: Provider, d: Dict) -> int:
@@ -52,8 +52,8 @@ class Wallet:
         if refresh:
             self.unspents = []
             with ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_EXECUTORS) as executor:
-                args = [dict(chain=self.chain, provider=self.provider, private_keys=[key], **self.kwargs, **kwargs) for key in self.keys]
-                for r in executor.map(get_unspents_wrapper, args):
+                args = [dict(private_keys=[key], **self.kwargs, **kwargs) for key in self.keys]
+                for r in executor.map(get_unspents_wrapper, repeat(self.chain), repeat(self.provider), args):
                     self.unspents.extend(r)
         return self.unspents
 
