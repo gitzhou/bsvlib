@@ -1,11 +1,7 @@
-from bsvlib.curve import modular_inverse, multiply, curve, Point, get_y, negative, add
+from bsvlib.curve import multiply, curve, Point, get_y, negative, add
 
 
-def test_modular_inverse():
-    assert modular_inverse(3, 7) == 5
-
-
-def test_point_operation():
+def test():
     x = 0xe46dcd7991e5a4bd642739249b0158312e1aee56a60fd1bf622172ffe65bd789
     y = 0x97693d32c540ac253de7a3dc73f7e4ba7b38d2dc1ecc8e07920b496fb107d6b2
     p = Point(x, y)

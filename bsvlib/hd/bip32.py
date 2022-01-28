@@ -70,7 +70,7 @@ class Xpub(Xkey):
 
         h: bytes = hmac.new(self.chain_code, self.key.serialize() + index, sha512).digest()
         offset: int = int.from_bytes(h[:32], 'big')
-        child: PublicKey = PublicKey(add(self.key.point, multiply(offset, curve.g)))
+        child: PublicKey = PublicKey(add(self.key.point(), multiply(offset, curve.g)))
 
         payload += h[32:]
         payload += child.serialize()
@@ -120,7 +120,7 @@ class Xprv(Xkey):
         message: bytes = (self.key.public_key().serialize() if index[0] < 0x80 else self.key_bytes) + index
         h: bytes = hmac.new(self.chain_code, message, sha512).digest()
         offset: int = int.from_bytes(h[:32], 'big')
-        child: PrivateKey = PrivateKey((self.key.key + offset) % curve.n)
+        child: PrivateKey = PrivateKey((self.key.int() + offset) % curve.n)
 
         payload += h[32:]
         payload += b'\x00' + child.serialize()

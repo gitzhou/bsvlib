@@ -8,7 +8,7 @@ from bsvlib.curve import Point
 from bsvlib.hash import sha256
 from bsvlib.keys import PrivateKey, PublicKey, verify_signed_text
 from bsvlib.script.type import P2pkhScriptType
-from bsvlib.utils import deserialize_ecdsa_der, deserialize_ecdsa_recoverable, text_digest, serialize_ecdsa_der
+from bsvlib.utils import text_digest, unstringify_ecdsa_recoverable
 from .test_transaction import digest1, digest2, digest3
 
 private_key_hex = 'f97c89aaacf0cd2e47ddbacc97dae1f88bec49106ac37716c451dcdd008a4b62'
@@ -31,7 +31,7 @@ def test_public_key():
     public_key_compressed = f'02{x}'
     public_key_uncompressed = f'04{x}{y}'
 
-    assert public_key.point == point
+    assert public_key.point() == point
     assert public_key.hex() == public_key_compressed
     assert public_key.hex(compressed=True) == public_key_compressed
     assert public_key.hex(compressed=False) == public_key_uncompressed
@@ -53,9 +53,6 @@ def test_public_key():
     with pytest.raises(TypeError, match=r'unsupported public key type'):
         # noinspection PyTypeChecker
         PublicKey(1.23)
-
-    with pytest.raises(ValueError, match=r'invalid public key prefix'):
-        PublicKey(f'05{x}')
 
 
 def test_private_key():
@@ -106,20 +103,19 @@ def test_private_key():
 def test_verify():
     # https://whatsonchain.com/tx/4674da699de44c9c5d182870207ba89e5ccf395e5101dab6b0900bbf2f3b16cb
     der: bytes = bytes.fromhex('304402207e2c6eb8c4b20e251a71c580373a2836e209c50726e5f8b0f4f59f8af00eee1a022019ae1690e2eb4455add6ca5b86695d65d3261d914bc1d7abb40b188c7f46c9a5')
-    assert private_key.verify(deserialize_ecdsa_der(der), digest1)
+    assert private_key.verify(der, digest1)
 
     # https://whatsonchain.com/tx/c04bbd007ad3987f9b2ea8534175b5e436e43d64471bf32139b5851adf9f477e
     der: bytes = bytes.fromhex('3043022053b1f5a28a011c60614401eeef88e49c676a098ce36d95ded1b42667f40efa37021f4de6703f8c74b0ce5dad617c00d1fb99580beb7972bf681e7215911c3648de')
-    assert private_key.verify(deserialize_ecdsa_der(der), digest2)
+    assert private_key.verify(der, digest2)
     der: bytes = bytes.fromhex('3045022100b9f293781ae1e269591df779dbadb41b9971d325d7b8f83d883fb55f2cb3ff7602202fe1e822628d85b0f52966602d0e153be411980d54884fa48a41d6fc32b4e9f5')
-    assert private_key.verify(deserialize_ecdsa_der(der), digest3)
+    assert private_key.verify(der, digest3)
 
 
 def test_sign():
     # ecdsa
     message: bytes = b'hello world'
-    signature = private_key.sign(message)
-    der: bytes = serialize_ecdsa_der(signature)
+    der: bytes = private_key.sign(message)
     vk = ecdsa.VerifyingKey.from_string(public_key.serialize(), curve=ecdsa.SECP256k1)
     assert vk.verify(signature=der, data=sha256(message), hashfunc=hashlib.sha256, sigdecode=ecdsa.util.sigdecode_der)
 
@@ -129,8 +125,8 @@ def test_sign():
     assert verify_signed_text(text, address, signature)
 
     message: bytes = text_digest(text)
-    recoverable_signature, _ = deserialize_ecdsa_recoverable(signature)
-    assert private_key.verify_recoverable(recoverable_signature, message)
+    serialized_recoverable, _ = unstringify_ecdsa_recoverable(signature)
+    assert private_key.verify_recoverable(serialized_recoverable, message)
 
     address, signature = PrivateKey('5KiANv9EHEU4o9oLzZ6A7z4xJJ3uvfK2RLEubBtTz1fSwAbpJ2U').sign_text(text)
     assert verify_signed_text(text, address, signature)

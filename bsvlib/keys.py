@@ -1,34 +1,36 @@
 import hashlib
 import hmac
 from base64 import b64encode, b64decode
-from secrets import randbelow
 from typing import Optional, Union, Callable, Tuple
 
-from .aes import aes_encrypt_with_iv, aes_decrypt_with_iv
+from coincurve import PrivateKey as CcPrivateKey, PublicKey as CcPublicKey
+
+from .aes import aes_decrypt_with_iv
+from .aes import aes_encrypt_with_iv
 from .base58 import base58check_encode
 from .constants import Chain, CHAIN_ADDRESS_PREFIX_DICT, CHAIN_WIF_PREFIX_DICT
-from .constants import NUMBER_BYTE_LENGTH
-from .constants import PUBLIC_KEY_BYTE_LENGTH_LIST, PUBLIC_KEY_COMPRESSED_PREFIX_LIST, PUBLIC_KEY_UNCOMPRESSED_PREFIX
-from .constants import PUBLIC_KEY_COMPRESSED_BYTE_LENGTH, PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH, PUBLIC_KEY_COMPRESSED_PREFIX_DICT
+from .constants import PUBLIC_KEY_COMPRESSED_PREFIX_LIST
 from .curve import Point
-from .curve import curve, get_y, modular_inverse, add, multiply
 from .hash import hash160, hash256
 from .script.script import Script
 from .script.type import P2pkhScriptType
-from .utils import decode_wif, text_digest, serialize_ecdsa_recoverable, deserialize_ecdsa_recoverable
+from .utils import decode_wif, text_digest, stringify_ecdsa_recoverable, unstringify_ecdsa_recoverable
+from .utils import deserialize_ecdsa_recoverable, serialize_ecdsa_der
 
 
 class PublicKey:
 
-    def __init__(self, public_key: Union[str, bytes, Point]):
+    def __init__(self, public_key: Union[str, bytes, Point, CcPublicKey]):
         """
-        create public key from serialized hex string or bytes, or curve point
+        create public key from serialized hex string or bytes, or curve point, or CoinCurve public key
         """
-        self.compressed: bool = True  # default compressed format public key
-
+        self.compressed: bool = True  # use compressed format public key by default
         if isinstance(public_key, Point):
             # from curve point
-            self.point: Point = public_key
+            self.key: CcPublicKey = CcPublicKey.from_point(public_key.x, public_key.y)
+        elif isinstance(public_key, CcPublicKey):
+            # from CoinCurve public key
+            self.key: CcPublicKey = public_key
         else:
             if isinstance(public_key, str):
                 # from serialized public key in hex string
@@ -38,28 +40,16 @@ class PublicKey:
                 pk: bytes = public_key
             else:
                 raise TypeError('unsupported public key type')
-            # here we have serialized public key
-            assert len(pk) in PUBLIC_KEY_BYTE_LENGTH_LIST, 'invalid byte length of public key'
-            prefix: bytes = pk[:1]
-            if prefix in PUBLIC_KEY_COMPRESSED_PREFIX_LIST:
-                assert len(pk) == PUBLIC_KEY_COMPRESSED_BYTE_LENGTH, 'invalid byte length of compressed public key'
-                x: int = int.from_bytes(pk[1:], 'big')
-                self.point: Point = Point(x, get_y(x, pk[0] % 2 == 0))
-            elif prefix == PUBLIC_KEY_UNCOMPRESSED_PREFIX:
-                assert len(pk) == PUBLIC_KEY_UNCOMPRESSED_BYTE_LENGTH, 'invalid byte length of uncompressed public key'
-                self.compressed = False
-                self.point: Point = Point(int.from_bytes(pk[1:33], 'big'), int.from_bytes(pk[33:], 'big'))
-            else:
-                raise ValueError('invalid public key prefix')
+            # here we have serialized public key in bytes
+            self.key: CcPublicKey = CcPublicKey(pk)
+            self.compressed: bool = pk[:1] in PUBLIC_KEY_COMPRESSED_PREFIX_LIST
 
-        assert self.point, 'bad public key'
+    def point(self) -> Point:
+        return Point(*self.key.point())
 
     def serialize(self, compressed: Optional[bool] = None) -> bytes:
         compressed = self.compressed if compressed is None else compressed
-        x, y = self.point.x, self.point.y
-        if compressed:
-            return PUBLIC_KEY_COMPRESSED_PREFIX_DICT[y % 2] + int.to_bytes(x, NUMBER_BYTE_LENGTH, 'big')
-        return PUBLIC_KEY_UNCOMPRESSED_PREFIX + int.to_bytes(x, NUMBER_BYTE_LENGTH, 'big') + int.to_bytes(y, NUMBER_BYTE_LENGTH, 'big')
+        return self.key.format(compressed)
 
     def hex(self, compressed: Optional[bool] = None) -> str:
         return self.serialize(compressed).hex()
@@ -86,33 +76,30 @@ class PublicKey:
 
     def __eq__(self, o: object) -> bool:
         if isinstance(o, PublicKey):
-            return self.point == o.point
+            return self.key == o.key
         return super().__eq__(o)  # pragma: no cover
 
-    def verify(self, signature: Tuple[int, int], message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bool:
+    def verify(self, signature: bytes, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bool:
         """
-        verify ECDSA signature (r, s)
+        verify serialized ECDSA signature in bitcoin strict DER (low-s) format
         """
-        e = int.from_bytes(hasher(message) if hasher else message, 'big')
-        r, s = signature
-        w = modular_inverse(s, curve.n)
-        u1 = (w * e) % curve.n
-        u2 = (w * r) % curve.n
-        x, _ = add(multiply(u1, curve.g), multiply(u2, self.point))
-        return r == (x % curve.n)
+        return self.key.verify(signature, message, hasher)
 
-    def verify_recoverable(self, signature: Tuple[int, int, int], message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bool:
+    def verify_recoverable(self, signature: bytes, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bool:
         """
-        verify recoverable ECDSA signature (recovery_id, r, s)
+        verify serialized recoverable ECDSA signature in format "r (32 bytes) + s (32 bytes) + recovery_id (1 byte)"
         """
-        _, r, s = signature
-        return self.verify((r, s), message, hasher) and self == recover_public_key(signature, message, hasher)
+        r, s, _ = deserialize_ecdsa_recoverable(signature)
+        der = serialize_ecdsa_der((r, s))
+        return self.verify(der, message, hasher) and self == recover_public_key(signature, message, hasher)
 
     def ecdh_key(self, key: 'PrivateKey') -> bytes:
-        point = multiply(key.key, self.point)
-        return PublicKey(point).serialize()
+        return PublicKey(self.key.multiply(key.serialize())).serialize()
 
     def encrypt(self, message: bytes) -> bytes:
+        """
+        Electrum ECIES (aka BIE1) encryption
+        """
         # generate an ephemeral EC private key in order to derive shared secret (ECDH key)
         ephemeral_private_key = PrivateKey()
         # derive ECDH key
@@ -131,43 +118,44 @@ class PublicKey:
         return encrypted + mac
 
     def encrypt_text(self, text: str) -> str:
+        """
+        :returns: BIE1 encrypted text, base64 encoded
+        """
         message: bytes = text.encode('utf-8')
         return b64encode(self.encrypt(message)).decode('ascii')
 
 
 class PrivateKey:
 
-    def __init__(self, private_key: Union[str, int, bytes, None] = None, chain: Optional[Chain] = None):
+    def __init__(self, private_key: Union[str, int, bytes, CcPrivateKey, None] = None, chain: Optional[Chain] = None):
         """
-        create private key from WIF (str), or int, or bytes
+        create private key from WIF (str), or int, or bytes, or CoinCurve private key
         random a new private key if None
         """
         self.chain: Chain = chain or Chain.MAIN
-        self.compressed: bool = True  # default compressed wif
+        self.compressed: bool = True  # use compressed WIF by default
         if private_key is None:
-            k = randbelow(curve.n)
-            while not k:  # pragma: no cover
-                k = randbelow(curve.n)
+            # create a new private key
+            self.key: CcPrivateKey = CcPrivateKey()
+        elif isinstance(private_key, CcPrivateKey):
+            # from CoinCurve private key
+            self.key: CcPrivateKey = private_key
         else:
             if isinstance(private_key, str):
                 # from wif
                 private_key_bytes, self.compressed, self.chain = decode_wif(private_key)
-                k = int.from_bytes(private_key_bytes, 'big')
+                self.key: CcPrivateKey = CcPrivateKey(private_key_bytes)
             elif isinstance(private_key, int):
                 # from private key as int
-                k = private_key
+                self.key: CcPrivateKey = CcPrivateKey.from_int(private_key)
             elif isinstance(private_key, bytes):
                 # from private key integer in bytes
-                k = int.from_bytes(private_key, 'big')
+                self.key: CcPrivateKey = CcPrivateKey(private_key)
             else:
                 raise TypeError('unsupported private key type')
-        self.key: int = k
-        assert 0 < self.key < curve.n, 'bad private key'
 
     def public_key(self) -> PublicKey:
-        pk = PublicKey(multiply(self.key, curve.g))
-        pk.compressed = self.compressed
-        return pk
+        return PublicKey(self.key.public_key.format(self.compressed))
 
     def locking_script(self, compressed: Optional[bool] = None) -> Script:
         """
@@ -192,73 +180,64 @@ class PrivateKey:
         return base58check_encode(CHAIN_WIF_PREFIX_DICT.get(chain) + key_bytes + compressed_bytes)
 
     def int(self) -> int:
-        return self.key
+        return self.key.to_int()
+
+    def serialize(self) -> bytes:
+        return self.key.secret
 
     def hex(self) -> str:
         return self.serialize().hex()
 
-    def serialize(self) -> bytes:
-        return self.key.to_bytes(NUMBER_BYTE_LENGTH, 'big')
+    def der(self) -> bytes:  # pragma: no cover
+        return self.key.to_der()
+
+    def pem(self) -> bytes:  # pragma: no cover
+        return self.key.to_pem()
 
     def __eq__(self, o: object) -> bool:
         if isinstance(o, PrivateKey):
             return self.key == o.key
         return super().__eq__(o)  # pragma: no cover
 
-    def sign(self, message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> Tuple[int, int]:
+    def sign(self, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bytes:
         """
-        :returns: ECDSA signature in format (r, s)
+        :returns: ECDSA signature in bitcoin strict DER (low-s) format
         """
-        e = int.from_bytes(hasher(message) if hasher else message, 'big')
-        r, s = 0, 0
-        while not r or not s:
-            k = PrivateKey()
-            r = k.public_key().point.x % curve.n
-            s = ((e + r * self.key) * modular_inverse(k.key, curve.n)) % curve.n
-        return r, s
+        return self.key.sign(message, hasher)
 
-    def verify(self, signature: Tuple[int, int], message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bool:
+    def verify(self, signature: bytes, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bool:
         """
-        verify ECDSA signature (r, s)
+        verify ECDSA signature in bitcoin strict DER (low-s) format
         """
         return self.public_key().verify(signature, message, hasher)
 
-    def sign_recoverable(self, message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> Tuple[int, int, int]:
+    def sign_recoverable(self, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bytes:
         """
-        :returns: Recoverable ECDSA signature, aka compact signature, in format (recovery_id, r, s)
+        :returns: serialized recoverable ECDSA signature (aka compact signature) in format
+                    r (32 bytes) + s (32 bytes) + recovery_id (1 byte)
         """
-        e = int.from_bytes(hasher(message) if hasher else message, 'big')
-        recovery_id, r, s = 0, 0, 0
-        while not r or not s:
-            k = PrivateKey()
-            # recovery id
-            # 0x00 - k.x < curve.n and k.y is even
-            # 0x01 - k.x < curve.n and k.y is odd
-            # 0x10 - k.x > curve.n and k.y is even
-            # 0x11 - k.x > curve.n and k.y is odd
-            recovery_id = 0 | 2 if k.public_key().point.x > curve.n else 0 | k.public_key().point.y % 2
-            r = k.public_key().point.x % curve.n
-            s = ((e + r * self.key) * modular_inverse(k.key, curve.n)) % curve.n
-        return recovery_id, r, s
+        return self.key.sign_recoverable(message, hasher)
 
-    def verify_recoverable(self, signature: Tuple[int, int, int], message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> bool:
+    def verify_recoverable(self, signature: bytes, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bool:
         """
-        verify recoverable ECDSA signature (recovery_id, r, s)
+        verify serialized recoverable ECDSA signature in format "r (32 bytes) + s (32 bytes) + recovery_id (1 byte)"
         """
         return self.public_key().verify_recoverable(signature, message, hasher)
 
     def sign_text(self, text: str) -> Tuple[str, str]:
         """sign arbitrary text with bitcoin private key
-        :returns: (p2pkh_address, serialized_recoverable_ecdsa_signature)
+        :returns: (p2pkh_address, stringified_recoverable_ecdsa_signature)
         """
         message: bytes = text_digest(text)
-        return self.address(), serialize_ecdsa_recoverable(self.sign_recoverable(message), self.compressed)
+        return self.address(), stringify_ecdsa_recoverable(self.sign_recoverable(message), self.compressed)
 
     def ecdh_key(self, key: PublicKey) -> bytes:
-        point = multiply(self.key, key.point)
-        return PublicKey(point).serialize()
+        return PublicKey(key.key.multiply(self.serialize())).serialize()
 
     def decrypt(self, message: bytes) -> bytes:
+        """
+        Electrum ECIES (aka BIE1) decryption
+        """
         assert len(message) >= 85, 'invalid encrypted length'
         encrypted, mac = message[:-32], message[-32:]
         # encrypted = magic_bytes (4 bytes) + ephemeral_public_key (33 bytes) + cipher_text (16 bytes at least)
@@ -275,46 +254,55 @@ class PrivateKey:
         return aes_decrypt_with_iv(key_e, iv, cipher)
 
     def decrypt_text(self, text: str) -> str:
+        """
+        decrypt BIE1 encrypted, base64 encoded text
+        """
         message: bytes = b64decode(text)
         return self.decrypt(message).decode('utf-8')
 
     def encrypt(self, message: bytes) -> bytes:  # pragma: no cover
+        """
+        Electrum ECIES (aka BIE1) encryption
+        """
         return self.public_key().encrypt(message)
 
     def encrypt_text(self, text: str) -> str:  # pragma: no cover
+        """
+        :returns: BIE1 encrypted text, base64 encoded
+        """
         return self.public_key().encrypt_text(text)
 
     @classmethod
     def from_hex(cls, value: str) -> 'PrivateKey':
-        return PrivateKey(bytes.fromhex(value))
+        return PrivateKey(CcPrivateKey.from_hex(value))
+
+    @classmethod
+    def from_der(cls, value: bytes) -> 'PrivateKey':  # pragma: no cover
+        return PrivateKey(CcPrivateKey.from_der(value))
+
+    @classmethod
+    def from_pem(cls, value: bytes) -> 'PrivateKey':  # pragma: no cover
+        return PrivateKey(CcPrivateKey.from_pem(value))
 
 
-def verify_signed_text(text: str, address: str, signature: str, hasher: Callable[[bytes], bytes] = hash256) -> bool:
+def verify_signed_text(text: str, address: str, signature: str, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bool:
     """
     verify signed arbitrary text
     """
+    serialized_recoverable, compressed = unstringify_ecdsa_recoverable(signature)
+    r, s, _ = deserialize_ecdsa_recoverable(serialized_recoverable)
     message: bytes = text_digest(text)
-    recoverable_signature, compressed = deserialize_ecdsa_recoverable(signature)
-    _, r, s = recoverable_signature
-    public_key = recover_public_key(recoverable_signature, message, hasher)
-    return public_key.verify((r, s), message, hasher) and public_key.address(compressed=compressed) == address
+    public_key: PublicKey = recover_public_key(serialized_recoverable, message, hasher)
+    der: bytes = serialize_ecdsa_der((r, s))
+    return public_key.verify(der, message, hasher) and public_key.address(compressed=compressed) == address
 
 
-def recover_public_key(signature: [int, int, int], message: bytes, hasher: Callable[[bytes], bytes] = hash256) -> PublicKey:
+def recover_public_key(signature: bytes, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> PublicKey:
     """
-    recover public key from the recoverable ECDSA signature
+    recover public key from serialized recoverable ECDSA signature in format
+      "r (32 bytes) + s (32 bytes) + recovery_id (1 byte)"
     """
-    recovery_id, r, s = signature
-    # calculate the public key (K) corresponding to the ephemeral private key (k) used when signing
-    k_x = r + (curve.n if recovery_id >= 2 else 0)
-    k_y = get_y(k_x, recovery_id % 2 == 0)
-    k_point = Point(k_x, k_y)
-    # calculate the public key (A) corresponding to the user private key (a) used when signing
-    # A = (sK - eG) / r
-    e = int.from_bytes(hasher(message) if hasher else message, 'big')
-    mod_inv_r = modular_inverse(r, curve.n)
-    a_point = add(multiply(mod_inv_r * s, k_point), multiply(mod_inv_r * (-e % curve.n), curve.g))
-    return PublicKey(a_point)
+    return PublicKey(CcPublicKey.from_signature_and_message(signature, message, hasher))
 
 
 Key = PrivateKey

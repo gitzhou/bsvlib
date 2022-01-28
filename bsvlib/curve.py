@@ -1,13 +1,13 @@
 from collections import namedtuple
-from typing import Optional, Tuple
+from typing import Optional
 
 from coincurve import PublicKey as CcPublicKey
 
 from .constants import NUMBER_BYTE_LENGTH
 
 Point = namedtuple('Point', 'x y')
-EllipticCurve = namedtuple('EllipticCurve', 'name p a b g n h')
 
+EllipticCurve = namedtuple('EllipticCurve', 'name p a b g n h')
 curve = EllipticCurve(
     name='Secp256k1',
     p=0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f,
@@ -17,35 +17,6 @@ curve = EllipticCurve(
     n=0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141,
     h=1,
 )
-
-
-def extended_euclid_gcd(a: int, b: int) -> Tuple[int, int, int]:
-    """
-    :returns: [gcd(a, b), x, y] where ax + by = gcd(a, b)
-    """
-    s, old_s = 0, 1
-    t, old_t = 1, 0
-    r, old_r = b, a
-    while r != 0:
-        quotient = old_r // r
-        old_r, r = r, old_r - quotient * r
-        old_s, s = s, old_s - quotient * s
-        old_t, t = t, old_t - quotient * t
-    return old_r, old_s, old_t
-
-
-def modular_inverse(num: int, n: int) -> int:
-    """
-    require num and n are co-prime
-    :returns: modular multiplicative inverse of num under n
-    """
-    # find gcd using Extended Euclid's Algorithm
-    gcd, x, y = extended_euclid_gcd(num, n)
-    # in case x is negative, we handle it by adding extra n
-    # because we know that modular multiplicative inverse of num in range n lies in the range [0, n-1]
-    if x < 0:
-        x += n
-    return x
 
 
 def on_curve(point: Optional[Point]) -> bool:
@@ -94,24 +65,24 @@ def add(p: Optional[Point], q: Optional[Point]) -> Optional[Point]:
     return r
 
 
-def multiply(k: int, point: Optional[Point]) -> Optional[Point]:
+def multiply(scalar: int, point: Optional[Point]) -> Optional[Point]:
     """
-    :returns: k * point computed using the double and add algorithm
+    multiply the given point by a scalar
     """
     assert on_curve(point)
-    if k % curve.n == 0 or point is None:
+    if scalar % curve.n == 0 or point is None:
         return None
-    if k < 0:
+    if scalar < 0:
         # k * point = -k * (-point)
-        return multiply(-k, negative(point))
-    r = Point(*CcPublicKey.from_point(*point).multiply((k % curve.n).to_bytes(NUMBER_BYTE_LENGTH, 'big')).point())
+        return multiply(-scalar, negative(point))
+    r = Point(*CcPublicKey.from_point(*point).multiply((scalar % curve.n).to_bytes(NUMBER_BYTE_LENGTH, 'big')).point())
     assert on_curve(r)
     return r
 
 
 def get_y(x: int, even: bool) -> int:
     """
-    calculate y from x and the parity of y
+    point (x, y) lies on the curve, calculate y from the given x and the parity of y
     """
     y_square = (x * x * x + curve.a * x + curve.b) % curve.p
     y = pow(y_square, (curve.p + 1) // 4, curve.p)

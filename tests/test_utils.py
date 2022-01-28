@@ -5,7 +5,7 @@ from bsvlib.constants import Chain
 from bsvlib.curve import curve
 from bsvlib.utils import bytes_to_bits, bits_to_bytes
 from bsvlib.utils import decode_address, decode_wif, get_pushdata_code, validate_address, resolve_address
-from bsvlib.utils import serialize_ecdsa_recoverable, deserialize_ecdsa_recoverable
+from bsvlib.utils import serialize_ecdsa_recoverable, deserialize_ecdsa_recoverable, unstringify_ecdsa_recoverable, stringify_ecdsa_recoverable
 from bsvlib.utils import unsigned_to_varint, deserialize_ecdsa_der, serialize_ecdsa_der
 
 
@@ -111,13 +111,16 @@ def test_der_serialization():
 
 
 def test_recoverable_serialization():
-    serialized: str = 'IGdzMq98lowek10e3JFXWj909xp0oLRj71aF7jpWRxaabwH+fBia/K2JpoGQlFFbAl/Q5jo2DYSzQw6pZWhmRtk='
-    recovery_id = 1
+    stringified: str = 'IGdzMq98lowek10e3JFXWj909xp0oLRj71aF7jpWRxaabwH+fBia/K2JpoGQlFFbAl/Q5jo2DYSzQw6pZWhmRtk='
     r = 46791760634954614230959036903197650877536710453529507613159894982805988775578
     s = 50210249429004071986853078788876176203428035162933045037212292756431067039449
+    recovery_id = 1
 
-    assert serialize_ecdsa_recoverable((recovery_id, r, s)) == serialized
-    assert deserialize_ecdsa_recoverable(serialized)[0] == (recovery_id, r, s)
+    serialized: bytes = unstringify_ecdsa_recoverable(stringified)[0]
+
+    assert serialize_ecdsa_recoverable((r, s, recovery_id)) == serialized
+    assert deserialize_ecdsa_recoverable(serialized) == (r, s, recovery_id)
+    assert stringify_ecdsa_recoverable(serialized) == stringified
 
 
 def test_bits():
