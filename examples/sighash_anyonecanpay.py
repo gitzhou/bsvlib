@@ -1,11 +1,12 @@
-from bsvlib import Wallet, Transaction, TxInput
+from bsvlib import Wallet, Transaction, TxInput, Key
 from bsvlib.constants import SIGHASH
-from bsvlib.keys import Key
+from bsvlib.service import WhatsOnChain
 
+provider = WhatsOnChain()
 private_key = Key('L5agPjZKceSTkhqZF2dmFptT5LFrbr6ZGPvP7u4A6dvhTrr71WZ9')
-unspents = Wallet([private_key]).get_unspents(refresh=True)
+unspents = Wallet([private_key], provider=provider).get_unspents(refresh=True)
 
-t = Transaction()
+t = Transaction(provider=provider)
 t.add_input(TxInput(unspents[0], sighash=SIGHASH.NONE_ANYONECANPAY_FORKID))
 t.sign()
 

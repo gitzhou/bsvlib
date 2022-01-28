@@ -51,17 +51,21 @@ class Wallet:
     def get_unspents(self, refresh: bool = False, **kwargs) -> List[Unspent]:
         if refresh:
             self.unspents = []
+            chain: Chain = kwargs.pop('chain', None) or self.chain
+            provider: Provider = kwargs.pop('provider', None) or self.provider
             with ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_EXECUTORS) as executor:
                 args = [dict(private_keys=[key], **self.kwargs, **kwargs) for key in self.keys]
-                for r in executor.map(get_unspents_wrapper, repeat(self.chain), repeat(self.provider), args):
+                for r in executor.map(get_unspents_wrapper, repeat(chain), repeat(provider), args):
                     self.unspents.extend(r)
         return self.unspents
 
     def get_balance(self, refresh: bool = False, **kwargs) -> int:
         if refresh:
+            chain: Chain = kwargs.pop('chain', None) or self.chain
+            provider: Provider = kwargs.pop('provider', None) or self.provider
             with ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_EXECUTORS) as executor:
                 args = [dict(private_keys=[key], **self.kwargs, **kwargs) for key in self.keys]
-                return sum([r for r in executor.map(get_balance_wrapper, repeat(self.chain), repeat(self.provider), args)])
+                return sum([r for r in executor.map(get_balance_wrapper, repeat(chain), repeat(provider), args)])
         return sum([unspent.satoshi for unspent in self.unspents])
 
     def create_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
@@ -83,7 +87,7 @@ class Wallet:
         if not self.unspents:
             raise InsufficientFunds('transaction mush have at least one unspent')
 
-        t = Transaction(fee_rate=fee_rate, chain=self.chain, provider=self.provider)
+        t = Transaction(fee_rate=fee_rate, chain=self.chain, provider=self.provider, **self.kwargs, **kwargs)
         if pushdatas:
             t.add_output(TxOutput(pushdatas))
         if outputs:

@@ -12,7 +12,6 @@ from ..script.script import Script
 from ..script.type import ScriptType, P2pkhScriptType, OpReturnScriptType
 from ..service.provider import Provider
 from ..service.service import Service
-from ..service.whatsonchain import WhatsOnChain
 from ..utils import unsigned_to_varint
 
 
@@ -84,7 +83,7 @@ class Transaction:
         self.locktime: int = locktime
         self.fee_rate: float = fee_rate if fee_rate is not None else TRANSACTION_FEE_RATE
         self.chain: Chain = chain
-        self.provider: Provider = provider or WhatsOnChain(chain)
+        self.provider: Provider = provider
         self.kwargs: Dict[str, Any] = dict(**kwargs) or {}
 
     def serialize(self) -> bytes:

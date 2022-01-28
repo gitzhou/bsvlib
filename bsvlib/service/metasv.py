@@ -58,8 +58,7 @@ class MetaSV(Provider):
     def broadcast(self, raw: str) -> Optional[str]:  # pragma: no cover
         with suppress(Exception):
             data = json.dumps({'hex': raw})
-            r = requests.post(f'{self.url}/tx/broadcast', headers=self.headers, data=data, timeout=self.timeout).json()
+            r = requests.post(f'{self.url}/tx/broadcast', headers=self.headers, data=data, timeout=self.timeout)
             r.raise_for_status()
-            assert r and r.get('txid')
-            return r['txid']
+            return r.json()['txid']
         return None
