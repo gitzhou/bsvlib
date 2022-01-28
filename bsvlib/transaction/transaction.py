@@ -219,7 +219,7 @@ class Transaction:
             if not tx_input.unlocking_script or not bypass:
                 signatures: List[bytes] = [private_key.sign(digests[i]) for private_key in tx_input.private_keys]
                 payload = {'signatures': signatures, 'private_keys': tx_input.private_keys, 'sighash': tx_input.sighash}
-                tx_input.unlocking_script = tx_input.script_type.unlocking(**payload, **self.kwargs, **kwargs)
+                tx_input.unlocking_script = tx_input.script_type.unlocking(**payload, **{**self.kwargs, **kwargs})
         return self
 
     def satoshi_total_in(self) -> int:
@@ -250,7 +250,7 @@ class Transaction:
         for tx_input in self.tx_inputs:
             if not tx_input.private_keys:
                 raise ValueError(f"can't estimate byte length for {tx_input} without private keys")
-            estimated_length += 41 + tx_input.script_type.estimated_unlocking_byte_length(private_keys=tx_input.private_keys, **self.kwargs, **kwargs)
+            estimated_length += 41 + tx_input.script_type.estimated_unlocking_byte_length(private_keys=tx_input.private_keys, **{**self.kwargs, **kwargs})
         for tx_output in self.tx_outputs:
             estimated_length += 8 + len(tx_output.locking_script.byte_length_varint()) + tx_output.locking_script.byte_length()
         return estimated_length

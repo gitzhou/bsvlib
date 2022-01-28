@@ -54,7 +54,7 @@ class Wallet:
             chain: Chain = kwargs.pop('chain', None) or self.chain
             provider: Provider = kwargs.pop('provider', None) or self.provider
             with ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_EXECUTORS) as executor:
-                args = [dict(private_keys=[key], **self.kwargs, **kwargs) for key in self.keys]
+                args = [dict(private_keys=[key], **{**self.kwargs, **kwargs}) for key in self.keys]
                 for r in executor.map(get_unspents_wrapper, repeat(chain), repeat(provider), args):
                     self.unspents.extend(r)
         return self.unspents
@@ -64,7 +64,7 @@ class Wallet:
             chain: Chain = kwargs.pop('chain', None) or self.chain
             provider: Provider = kwargs.pop('provider', None) or self.provider
             with ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_EXECUTORS) as executor:
-                args = [dict(private_keys=[key], **self.kwargs, **kwargs) for key in self.keys]
+                args = [dict(private_keys=[key], **{**self.kwargs, **kwargs}) for key in self.keys]
                 return sum([r for r in executor.map(get_balance_wrapper, repeat(chain), repeat(provider), args)])
         return sum([unspent.satoshi for unspent in self.unspents])
 
@@ -81,13 +81,13 @@ class Wallet:
         :param pushdatas: list of OP_RETURN pushdata
         :param change: automatically add a P2PKH change output if True
         :param sign: sign the transaction if True
-        :param kwargs: passing to get unspents and sign
+        :param kwargs: passing to get unspents and create transaction
         """
-        self.unspents = unspents or self.get_unspents(refresh=True, **self.kwargs, **kwargs)
+        self.unspents = unspents or self.get_unspents(refresh=True, **{**self.kwargs, **kwargs})
         if not self.unspents:
             raise InsufficientFunds('transaction mush have at least one unspent')
 
-        t = Transaction(fee_rate=fee_rate, chain=self.chain, provider=self.provider, **self.kwargs, **kwargs)
+        t = Transaction(fee_rate=fee_rate, chain=self.chain, provider=self.provider, **{**self.kwargs, **kwargs})
         if pushdatas:
             t.add_output(TxOutput(pushdatas))
         if outputs:
@@ -112,7 +112,7 @@ class Wallet:
         if change:
             t.add_change(leftover)
         if sign:
-            t.sign(**self.kwargs, **kwargs)
+            t.sign()
         return t
 
     def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
