@@ -1,6 +1,10 @@
 from collections import namedtuple
 from typing import Optional, Tuple
 
+from coincurve import PublicKey as CcPublicKey
+
+from .constants import NUMBER_BYTE_LENGTH
+
 Point = namedtuple('Point', 'x y')
 EllipticCurve = namedtuple('EllipticCurve', 'name p a b g n h')
 
@@ -85,15 +89,7 @@ def add(p: Optional[Point], q: Optional[Point]) -> Optional[Point]:
         # p == -q
         return None
     # p != -q
-    xp, yp = p
-    xq, yq = q
-    if p == q:
-        m = (3 * xp * xp + curve.a) * modular_inverse(2 * yp, curve.p)
-    else:
-        m = (yp - yq) * modular_inverse(xp - xq, curve.p)
-    x = m * m - xp - xq
-    y = yp + m * (x - xp)
-    r = Point(x % curve.p, -y % curve.p)
+    r = Point(*CcPublicKey.from_point(*p).combine([CcPublicKey.from_point(*q)]).point())
     assert on_curve(r)
     return r
 
@@ -108,13 +104,7 @@ def multiply(k: int, point: Optional[Point]) -> Optional[Point]:
     if k < 0:
         # k * point = -k * (-point)
         return multiply(-k, negative(point))
-    # double and add
-    r = None
-    while k:
-        if k & 1:
-            r = add(r, point)
-        point = add(point, point)
-        k >>= 1
+    r = Point(*CcPublicKey.from_point(*point).multiply((k % curve.n).to_bytes(NUMBER_BYTE_LENGTH, 'big')).point())
     assert on_curve(r)
     return r
 
