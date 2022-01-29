@@ -44,7 +44,7 @@ class ScriptType(metaclass=ABCMeta):
 
 class UnknownScriptType(ScriptType):  # pragma: no cover
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return '<ScriptType:Unknown>'
 
     @classmethod
@@ -58,7 +58,7 @@ class UnknownScriptType(ScriptType):  # pragma: no cover
 
 class P2pkhScriptType(ScriptType):
 
-    def __repr__(self) -> str:  # pragma: no cover
+    def __str__(self) -> str:  # pragma: no cover
         return '<ScriptType:P2PKH>'
 
     @classmethod
@@ -89,7 +89,7 @@ class P2pkhScriptType(ScriptType):
 
 class OpReturnScriptType(ScriptType):
 
-    def __repr__(self) -> str:  # pragma: no cover
+    def __str__(self) -> str:  # pragma: no cover
         return '<ScriptType:OP_RETURN>'
 
     @classmethod
@@ -116,7 +116,7 @@ class OpReturnScriptType(ScriptType):
 
 class P2pkScriptType(ScriptType):
 
-    def __repr__(self) -> str:  # pragma: no cover
+    def __str__(self) -> str:  # pragma: no cover
         return '<ScriptType:P2PK>'
 
     @classmethod

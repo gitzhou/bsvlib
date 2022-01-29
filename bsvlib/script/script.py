@@ -39,5 +39,5 @@ class Script:
             return self.script == o.script
         return super().__eq__(o)  # pragma: no cover
 
-    def __repr__(self) -> str:  # pragma: no cover
+    def __str__(self) -> str:  # pragma: no cover
         return self.script.hex()

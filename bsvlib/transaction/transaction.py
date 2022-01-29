@@ -45,7 +45,7 @@ class TxInput:
         stream.write(self.sequence.to_bytes(4, 'little'))
         return stream.getvalue()
 
-    def __repr__(self) -> str:  # pragma: no cover
+    def __str__(self) -> str:  # pragma: no cover
         return f'<TxInput outpoint={self.txid}:{self.vout} satoshi={self.satoshi} locking_script={self.locking_script}>'
 
 
@@ -70,6 +70,9 @@ class TxOutput:
 
     def serialize(self) -> bytes:
         return self.satoshi.to_bytes(8, 'little') + self.locking_script.byte_length_varint() + self.locking_script.serialize()
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f'<TxOutput satoshi={self.satoshi} locking_script={self.locking_script.hex()}>'
 
 
 class Transaction:

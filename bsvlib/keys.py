@@ -74,11 +74,6 @@ class PublicKey:
         """
         return base58check_encode(CHAIN_ADDRESS_PREFIX_DICT.get(chain) + self.hash160(compressed))
 
-    def __eq__(self, o: object) -> bool:
-        if isinstance(o, PublicKey):
-            return self.key == o.key
-        return super().__eq__(o)  # pragma: no cover
-
     def verify(self, signature: bytes, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bool:
         """
         verify serialized ECDSA signature in bitcoin strict DER (low-s) format
@@ -123,6 +118,14 @@ class PublicKey:
         """
         message: bytes = text.encode('utf-8')
         return b64encode(self.encrypt(message)).decode('ascii')
+
+    def __eq__(self, o: object) -> bool:
+        if isinstance(o, PublicKey):
+            return self.key == o.key
+        return super().__eq__(o)  # pragma: no cover
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f'<PublicKey hex={self.hex()}>'
 
 
 class PrivateKey:
@@ -193,11 +196,6 @@ class PrivateKey:
 
     def pem(self) -> bytes:  # pragma: no cover
         return self.key.to_pem()
-
-    def __eq__(self, o: object) -> bool:
-        if isinstance(o, PrivateKey):
-            return self.key == o.key
-        return super().__eq__(o)  # pragma: no cover
 
     def sign(self, message: bytes, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bytes:
         """
@@ -271,6 +269,14 @@ class PrivateKey:
         :returns: BIE1 encrypted text, base64 encoded
         """
         return self.public_key().encrypt_text(text)
+
+    def __eq__(self, o: object) -> bool:
+        if isinstance(o, PrivateKey):
+            return self.key == o.key
+        return super().__eq__(o)  # pragma: no cover
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f'<PrivateKey wif={self.wif()} int={self.int()}>'
 
     @classmethod
     def from_hex(cls, value: str) -> 'PrivateKey':
