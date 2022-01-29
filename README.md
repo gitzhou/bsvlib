@@ -18,6 +18,8 @@ A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
 - ECDH and Electrum ECIES (aka BIE1) implementation
 - HD implementation (BIP-32, BIP-39, BIP-44)
 
+👉 [Join our Telegram group for discussions or support](https://t.me/bsvlib).
+
 ## Installation
 
 ```
