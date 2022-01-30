@@ -83,8 +83,8 @@ class Wallet:
         :param sign: sign the transaction if True
         :param kwargs: passing to get unspents and create transaction
         """
-        self.unspents = unspents or self.get_unspents(refresh=True, **{**self.kwargs, **kwargs})
-        if not self.unspents:
+        unspents: List[Unspent] = unspents or self.get_unspents(refresh=True, **{**self.kwargs, **kwargs})
+        if not unspents:
             raise InsufficientFunds('transaction mush have at least one unspent')
 
         t = Transaction(fee_rate=fee_rate, chain=self.chain, provider=self.provider, **{**self.kwargs, **kwargs})
@@ -93,22 +93,24 @@ class Wallet:
         if outputs:
             t.add_outputs([TxOutput(output[0], output[1]) for output in outputs])
         # pick unspent
-        picked_unspents = []
+        picked_unspents: List[Unspent] = []
         if combine or not outputs:
-            picked_unspents = self.unspents
-            self.unspents = []
+            picked_unspents = unspents
+            unspents = []
             t.add_inputs([unspent for unspent in picked_unspents])
         else:
-            unspent = self.unspents.pop(0)
+            unspent = unspents.pop()
             picked_unspents.append(unspent)
             t.add_input(unspent)
-            while t.fee() < t.estimated_fee() and self.unspents:
-                unspent = self.unspents.pop(0)
+            while t.fee() < t.estimated_fee() and unspents:
+                unspent = unspents.pop()
                 picked_unspents.append(unspent)
                 t.add_input(unspent)
         if t.fee() < t.estimated_fee():
-            self.unspents.extend(picked_unspents)
+            unspents.extend(picked_unspents)
             raise InsufficientFunds(f'require {t.estimated_fee() + t.satoshi_total_out()} satoshi but only {t.satoshi_total_in()}')
+        else:
+            self.unspents = list(set(self.unspents) - set(picked_unspents))
         if change:
             t.add_change(leftover)
         if sign:

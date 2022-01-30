@@ -35,10 +35,13 @@ class Unspent:
     def __str__(self) -> str:  # pragma: no cover
         return f'<Unspent outpoint={self.txid}:{self.vout} satoshi={self.satoshi} script={self.locking_script}>'
 
-    def __eq__(self, o: object) -> bool:
+    def __eq__(self, o: object) -> bool:  # pragma: no cover
         if isinstance(o, Unspent):
             return self.txid == o.txid and self.vout == o.vout
-        return super().__eq__(o)  # pragma: no cover
+        return super().__eq__(o)
+
+    def __hash__(self) -> int:  # pragma: no cover
+        return f'{self.txid}:{self.vout}'.__hash__()
 
     @classmethod
     def get_unspents(cls, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs) -> List['Unspent']:
