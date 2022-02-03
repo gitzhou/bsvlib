@@ -26,7 +26,7 @@ class TxInput:
         self.vout: int = unspent.vout
         self.satoshi: int = unspent.satoshi
         self.height: int = unspent.height
-        self.confirmation: int = unspent.confirmation
+        self.confirmations: int = unspent.confirmations
         self.private_keys: List[PrivateKey] = private_keys or unspent.private_keys or []
         self.script_type: ScriptType = unspent.script_type
         self.locking_script: Script = unspent.locking_script

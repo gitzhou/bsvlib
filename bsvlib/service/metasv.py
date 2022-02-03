@@ -10,8 +10,8 @@ from ..constants import Chain, METASV_TOKEN
 
 class MetaSV(Provider):
 
-    def __init__(self, token: Optional[str] = None):
-        super().__init__(chain=Chain.MAIN)
+    def __init__(self, token: Optional[str] = None, headers: Optional[Dict] = None, timeout: Optional[int] = None):
+        super().__init__(Chain.MAIN, headers, timeout)
         self.token = token or METASV_TOKEN
         assert self.token, 'MetaSV service requires a token'
         self.url = 'https://apiv2.metasv.com'

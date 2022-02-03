@@ -19,7 +19,7 @@ class Unspent:
         self.vout: int = int(kwargs.get('vout'))
         self.satoshi: int = int(kwargs.get('satoshi'))
         self.height: int = -1 if kwargs.get('height') is None else kwargs.get('height')
-        self.confirmation: int = 0 if kwargs.get('confirmation') is None else kwargs.get('confirmation')
+        self.confirmations: int = 0 if kwargs.get('confirmations') is None else kwargs.get('confirmations')
         # check if set private keys, P2PKH and P2PK only needs one key, but other script types may need more
         self.private_keys: List[PrivateKey] = kwargs.get('private_keys') if kwargs.get('private_keys') else []
         # if address is not set then try to parse from private keys, otherwise check address only

@@ -1,9 +1,9 @@
 from bsvlib import Wallet, Transaction, TxInput, Key
-from bsvlib.constants import SIGHASH
+from bsvlib.constants import SIGHASH, Chain
 from bsvlib.service import WhatsOnChain
 
-provider = WhatsOnChain()
-private_key = Key('L5agPjZKceSTkhqZF2dmFptT5LFrbr6ZGPvP7u4A6dvhTrr71WZ9')
+provider = WhatsOnChain(Chain.TEST)
+private_key = Key('cVwfreZB3i8iv9JpdSStd9PWhZZGGJCFLS4rEKWfbkahibwhticA')
 unspents = Wallet([private_key], provider=provider).get_unspents(refresh=True)
 
 t = Transaction(provider=provider)

@@ -216,19 +216,19 @@ def unstringify_ecdsa_recoverable(signature: str) -> Tuple[bytes, bool]:
     return serialized[1:] + recovery_id.to_bytes(1, 'big'), compressed
 
 
-def bytes_to_bits(value: Union[str, bytes]) -> str:
+def bytes_to_bits(octets: Union[str, bytes]) -> str:
     """
     convert bytes to binary 0/1 string
     """
-    b: bytes = value if isinstance(value, bytes) else bytes.fromhex(value)
+    b: bytes = octets if isinstance(octets, bytes) else bytes.fromhex(octets)
     bits: str = bin(int.from_bytes(b, 'big'))[2:]
     if len(bits) < len(b) * 8:
         bits = '0' * (len(b) * 8 - len(bits)) + bits
     return bits
 
 
-def bits_to_bytes(value: str) -> bytes:
+def bits_to_bytes(bits: str) -> bytes:
     """
-    convert binary 0/1 string to bytes
+    convert binary 0/1 string to the least number of bytes
     """
-    return unsigned_to_bytes(int(value, 2))
+    return unsigned_to_bytes(int(bits, 2))
