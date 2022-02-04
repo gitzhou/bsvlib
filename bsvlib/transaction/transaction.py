@@ -8,7 +8,7 @@ from ..constants import TRANSACTION_VERSION, TRANSACTION_LOCKTIME, TRANSACTION_S
 from ..hash import hash256
 from ..keys import PrivateKey
 from ..script.script import Script
-from ..script.type import ScriptType, P2pkhScriptType, OpReturnScriptType
+from ..script.type import ScriptType, P2pkhScriptType, OpReturnScriptType, UnknownScriptType
 from ..service.provider import Provider
 from ..service.service import Service
 from ..utils import unsigned_to_varint
@@ -50,7 +50,7 @@ class TxInput:
 
 class TxOutput:
 
-    def __init__(self, out: Union[str, List[Union[str, bytes]], Script], satoshi: int = 0, script_type: Optional[ScriptType] = None):
+    def __init__(self, out: Union[str, List[Union[str, bytes]], Script], satoshi: int = 0, script_type: ScriptType = UnknownScriptType):
         self.satoshi = satoshi
         if isinstance(out, str):
             # from address
@@ -285,6 +285,7 @@ class Transaction:
         return self
 
     def broadcast(self) -> Optional[str]:  # pragma: no cover
-        if self.fee() < self.estimated_fee():
-            raise InsufficientFunds(f'require {self.estimated_fee() + self.satoshi_total_out()} satoshi but only {self.satoshi_total_in()}')
+        fee_expected = math.ceil(self.fee_rate * self.byte_length())
+        if self.fee() < fee_expected:
+            raise InsufficientFunds(f'require {self.satoshi_total_out() + fee_expected} satoshi but only {self.satoshi_total_in()}')
         return Service(self.chain, self.provider).broadcast(self.hex())

@@ -1,19 +1,9 @@
-from typing_extensions import Literal
-
 from .hash import hash256
-
-
-def unsigned_to_bytes(num: int, byteorder: Literal['big', 'little'] = 'big') -> bytes:
-    """
-    convert an unsigned int to the least number of bytes as possible.
-    """
-    return num.to_bytes((num.bit_length() + 7) // 8 or 1, byteorder)
-
 
 BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 
-def checksum(payload: bytes) -> bytes:
+def _checksum(payload: bytes) -> bytes:
     return hash256(payload)[:4]
 
 
@@ -34,7 +24,7 @@ def b58_encode(payload: bytes) -> str:
 
 
 def base58check_encode(payload: bytes) -> str:
-    return b58_encode(payload + checksum(payload))
+    return b58_encode(payload + _checksum(payload))
 
 
 def b58_decode(encoded: str) -> bytes:
@@ -52,14 +42,15 @@ def b58_decode(encoded: str) -> bytes:
             num += BASE58_ALPHABET.index(char)
     except Exception:
         raise ValueError(f'invalid base58 encoded {encoded}')
-    return prefix + unsigned_to_bytes(num)
+    # if num is 0 then (0).to_bytes will return b''
+    return prefix + num.to_bytes((num.bit_length() + 7) // 8, 'big')
 
 
 def base58check_decode(encoded: str) -> bytes:
     decoded = b58_decode(encoded)
     payload = decoded[:-4]
     decoded_checksum = decoded[-4:]
-    hash_checksum = checksum(payload)
+    hash_checksum = _checksum(payload)
     if decoded_checksum != hash_checksum:
         raise ValueError(f'unmatched base58 checksum, expect {decoded_checksum.hex()} but actually {hash_checksum.hex()}')
     return payload

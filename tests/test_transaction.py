@@ -7,7 +7,7 @@ from bsvlib.script.script import Script
 from bsvlib.script.type import P2pkhScriptType
 from bsvlib.transaction.transaction import TxOutput, Transaction
 from bsvlib.transaction.unspent import Unspent
-from bsvlib.utils import assemble_pushdata
+from bsvlib.utils import encode_pushdata
 
 digest1 = bytes.fromhex(
     '01000000'
@@ -85,7 +85,7 @@ def test_transaction():
     signature = bytes.fromhex('304402207e2c6eb8c4b20e251a71c580373a2836e209c50726e5f8b0f4f59f8af00eee1a022019ae1690e2eb4455add6ca5b86695d65d3261d914bc1d7abb40b188c7f46c9a5')
     sighash = bytes.fromhex('41')
     public_key = bytes.fromhex('02e46dcd7991e5a4bd642739249b0158312e1aee56a60fd1bf622172ffe65bd789')
-    t.tx_inputs[0].unlocking_script = Script(assemble_pushdata(signature + sighash) + assemble_pushdata(public_key))
+    t.tx_inputs[0].unlocking_script = Script(encode_pushdata(signature + sighash) + encode_pushdata(public_key))
 
     assert t.txid() == '4674da699de44c9c5d182870207ba89e5ccf395e5101dab6b0900bbf2f3b16cb'
     assert t.fee() == 200

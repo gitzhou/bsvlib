@@ -1,12 +1,12 @@
 import pytest
 
 from bsvlib.base58 import base58check_encode, b58_encode
-from bsvlib.constants import Chain
+from bsvlib.constants import Chain, OP
 from bsvlib.curve import curve
 from bsvlib.utils import bytes_to_bits, bits_to_bytes
-from bsvlib.utils import decode_address, decode_wif, get_pushdata_code, validate_address, resolve_address
+from bsvlib.utils import decode_address, decode_wif, get_pushdata_code, encode_pushdata, encode_int, validate_address, resolve_address
 from bsvlib.utils import serialize_ecdsa_recoverable, deserialize_ecdsa_recoverable, unstringify_ecdsa_recoverable, stringify_ecdsa_recoverable
-from bsvlib.utils import unsigned_to_varint, deserialize_ecdsa_der, serialize_ecdsa_der
+from bsvlib.utils import unsigned_to_varint, unsigned_to_bytes, deserialize_ecdsa_der, serialize_ecdsa_der
 
 
 def test_unsigned_to_varint():
@@ -27,6 +27,17 @@ def test_unsigned_to_varint():
 
     with pytest.raises(OverflowError):
         unsigned_to_varint(0x010000000000000000)
+
+
+def test_unsigned_to_bytes():
+    with pytest.raises(OverflowError):
+        unsigned_to_bytes(-1)
+
+    assert unsigned_to_bytes(0) == bytes.fromhex('00')
+    assert unsigned_to_bytes(num=255, byteorder='big') == bytes.fromhex('ff')
+    assert unsigned_to_bytes(num=256, byteorder='big') == bytes.fromhex('0100')
+
+    assert unsigned_to_bytes(num=256, byteorder='little') == bytes.fromhex('0001')
 
 
 def test_address():
@@ -53,9 +64,7 @@ def test_address():
 def test_resolve_address():
     assert resolve_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa') == '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'
     assert resolve_address('') is None
-    assert resolve_address('1aaron67')
     assert resolve_address('$aaron67')
-    assert resolve_address('aaron67@moneybutton.com')
 
 
 def test_decode_wif():
@@ -82,6 +91,59 @@ def test_get_pushdata_code():
     assert get_pushdata_code(0xffff) == bytes.fromhex('4dffff')
     assert get_pushdata_code(0x010000) == bytes.fromhex('4e00000100')
     assert get_pushdata_code(0x01020304) == bytes.fromhex('4e04030201')
+
+    with pytest.raises(ValueError, match=r'data too long to encode in a PUSHDATA opcode'):
+        get_pushdata_code(0x0100000000)
+
+
+def test_encode_pushdata():
+    # minimal push
+    assert encode_pushdata(b'') == OP.OP_0
+    assert encode_pushdata(b'\x00') == b'\x01\x00'
+    assert encode_pushdata(b'\x01') == OP.OP_1
+    assert encode_pushdata(b'\x02') == OP.OP_2
+    assert encode_pushdata(b'\x10') == OP.OP_16
+    assert encode_pushdata(b'\x11') == b'\x01\x11'
+    assert encode_pushdata(b'\x81') == OP.OP_1NEGATE
+    # non-minimal push
+    with pytest.raises(AssertionError, match=r'empty pushdata'):
+        encode_pushdata(b'', False)
+    assert encode_pushdata(b'\x00', False) == b'\x01\x00'
+    assert encode_pushdata(b'\x01', False) == b'\x01\x01'
+    assert encode_pushdata(b'\x02', False) == b'\x01\x02'
+    assert encode_pushdata(b'\x10', False) == b'\x01\x10'
+    assert encode_pushdata(b'\x11', False) == b'\x01\x11'
+    assert encode_pushdata(b'\x81', False) == b'\x01\x81'
+
+
+def test_encode_int():
+    assert encode_int(-2147483648) == bytes.fromhex('05 00 00 00 80 80')
+    assert encode_int(-2147483647) == bytes.fromhex('04 FF FF FF FF')
+    assert encode_int(-8388608) == bytes.fromhex('04 00 00 80 80')
+    assert encode_int(-8388607) == bytes.fromhex('03 FF FF FF')
+    assert encode_int(-32768) == bytes.fromhex('03 00 80 80')
+    assert encode_int(-32767) == bytes.fromhex('02 FF FF')
+    assert encode_int(-128) == bytes.fromhex('02 80 80')
+    assert encode_int(-127) == bytes.fromhex('01 FF')
+    assert encode_int(-17) == bytes.fromhex('01 91')
+    assert encode_int(-16) == bytes.fromhex('01 90')
+    assert encode_int(-2) == bytes.fromhex('01 82')
+    assert encode_int(-1) == OP.OP_1NEGATE
+
+    assert encode_int(0) == OP.OP_0
+
+    assert encode_int(1) == OP.OP_1
+    assert encode_int(2) == OP.OP_2
+    assert encode_int(16) == OP.OP_16
+    assert encode_int(17) == bytes.fromhex('01 11')
+    assert encode_int(127) == bytes.fromhex('01 7F')
+    assert encode_int(128) == bytes.fromhex('02 80 00')
+    assert encode_int(32767) == bytes.fromhex('02 FF 7F')
+    assert encode_int(32768) == bytes.fromhex('03 00 80 00')
+    assert encode_int(8388607) == bytes.fromhex('03 FF FF 7F')
+    assert encode_int(8388608) == bytes.fromhex('04 00 00 80 00')
+    assert encode_int(2147483647) == bytes.fromhex('04 FF FF FF 7F')
+    assert encode_int(2147483648) == bytes.fromhex('05 00 00 00 80 00')
 
 
 def test_der_serialization():

@@ -4,8 +4,9 @@ from contextlib import suppress
 from typing import Tuple, Optional, Union
 
 import requests
+from typing_extensions import Literal
 
-from .base58 import base58check_decode, unsigned_to_bytes
+from .base58 import base58check_decode
 from .constants import Chain, ADDRESS_PREFIX_CHAIN_DICT, WIF_PREFIX_CHAIN_DICT, OP, NUMBER_BYTE_LENGTH, HTTP_REQUEST_TIMEOUT
 from .curve import curve
 
@@ -24,6 +25,13 @@ def unsigned_to_varint(num: int) -> bytes:
         return b'\xfe' + num.to_bytes(4, 'little')
     else:
         return b'\xff' + num.to_bytes(8, 'little')
+
+
+def unsigned_to_bytes(num: int, byteorder: Literal['big', 'little'] = 'big') -> bytes:
+    """
+    convert an unsigned int to the least number of bytes as possible.
+    """
+    return num.to_bytes((num.bit_length() + 7) // 8 or 1, byteorder)
 
 
 def decode_address(address: str) -> Tuple[bytes, Chain]:
@@ -101,16 +109,45 @@ def get_pushdata_code(byte_length: int) -> bytes:
     elif byte_length <= 0xffff:
         # OP_PUSHDATA2
         return OP.OP_PUSHDATA2 + byte_length.to_bytes(2, 'little')
-    else:
+    elif byte_length <= 0xffffffff:
         # OP_PUSHDATA4
         return OP.OP_PUSHDATA4 + byte_length.to_bytes(4, 'little')
+    else:
+        raise ValueError("data too long to encode in a PUSHDATA opcode")
 
 
-def assemble_pushdata(pushdata: bytes) -> bytes:
+def encode_pushdata(pushdata: bytes, minimal_push: bool = True) -> bytes:
+    """encode pushdata with proper opcode
+    https://github.com/bitcoin-sv/bitcoin-sv/blob/v1.0.10/src/script/interpreter.cpp#L310-L337
+    :param pushdata: bytes you want to push onto the stack in bitcoin script
+    :param minimal_push: if True then push data following the minimal push rule
     """
-    :returns: OP_PUSHDATA + pushdata
-    """
+    if minimal_push:
+        if pushdata == b'':
+            return OP.OP_0
+        if len(pushdata) == 1 and 1 <= pushdata[0] <= 16:
+            return bytes([OP.OP_1[0] + pushdata[0] - 1])
+        if len(pushdata) == 1 and pushdata[0] == 0x81:
+            return OP.OP_1NEGATE
+    else:
+        # non-minimal push requires pushdata != b''
+        assert pushdata, 'empty pushdata'
     return get_pushdata_code(len(pushdata)) + pushdata
+
+
+def encode_int(num: int) -> bytes:
+    """
+    encode a signed integer you want to push onto the stack in bitcoin script, following the minimal push rule
+    """
+    if num == 0:
+        return OP.OP_0
+    negative: bool = num < 0
+    octets: bytearray = bytearray(unsigned_to_bytes(-num if negative else num, 'little'))
+    if octets[-1] & 0x80:
+        octets += b'\x00'
+    if negative:
+        octets[-1] |= 0x80
+    return encode_pushdata(octets)
 
 
 def deserialize_ecdsa_der(signature: bytes) -> Tuple[int, int]:
