@@ -2,14 +2,14 @@
 
 [![build](https://github.com/gitzhou/bsvlib/actions/workflows/build.yml/badge.svg)](https://github.com/gitzhou/bsvlib/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/gitzhou/bsvlib/branch/master/graph/badge.svg?token=ZD1AS8JG9W)](https://codecov.io/gh/gitzhou/bsvlib)
-[![PyPI version](https://img.shields.io/pypi/v/bsvlib.svg?style=flat-square)](https://pypi.org/project/bsvlib)
-[![Python versions](https://img.shields.io/pypi/pyversions/bsvlib.svg?style=flat-square)](https://pypi.org/project/bsvlib)
-[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://en.wikipedia.org/wiki/MIT_License)
+[![PyPI version](https://img.shields.io/pypi/v/bsvlib)](https://pypi.org/project/bsvlib)
+[![Python versions](https://img.shields.io/pypi/pyversions/bsvlib)](https://pypi.org/project/bsvlib)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue)](https://en.wikipedia.org/wiki/MIT_License)
 
 A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
 
 - MAINNET and TESTNET supported
-- P2PKH and P2PK supported
+- P2PKH, P2PK, and bare-multisig supported
 - All the SIGHASH flags supported
 - Additional script types can be customized
 - [MetaSV](https://metasv.com/), [SensibleQuery](https://api.sensiblequery.com/swagger/index.html), and [WhatsOnChain](https://developers.whatsonchain.com/) API integrated
@@ -76,7 +76,36 @@ t.add_change(private_key.address())
 print(t.sign().broadcast())
 ```
 
-4. Sign with different SIGHASH flags, [more examples](https://github.com/gitzhou/bsvlib/tree/master/examples)
+4. Operate bare-multisig
+
+```python
+from typing import List, Union
+
+from bsvlib import Key, Unspent, Transaction, TxOutput
+from bsvlib.constants import Chain
+from bsvlib.script import BareMultisigScriptType, Script
+from bsvlib.service import WhatsOnChain
+
+k1 = Key('cVwfreZB3i8iv9JpdSStd9PWhZZGGJCFLS4rEKWfbkahibwhticA')
+k2 = Key('93UnxexmsTYCmDJdctz4zacuwxQd5prDmH6rfpEyKkQViAVA3me')
+provider = WhatsOnChain(Chain.TEST)
+
+t = Transaction(provider=provider)
+t.add_inputs(Unspent.get_unspents(provider=provider, private_keys=[k1]))
+# add a 2-of-3 multi-sig output
+public_keys: List[Union[str, bytes]] = [k1.public_key().hex(compressed=False), Key().public_key().hex(), k2.public_key().serialize()]
+multisig_script: Script = BareMultisigScriptType.locking(public_keys, 2)
+t.add_output(TxOutput(out=multisig_script, satoshi=1000, script_type=BareMultisigScriptType()))
+txid = t.add_change().sign().broadcast()
+print(f'create multisig - {txid}')
+
+# send the multi-sig unspent we just created
+unspent = Unspent(txid=txid, vout=0, satoshi=1000, private_keys=[k1, k2], locking_script=multisig_script, script_type=BareMultisigScriptType())
+txid = Transaction(provider=provider).add_input(unspent).add_change(k1.address()).sign().broadcast()
+print(f'spend multisig - {txid}')
+```
+
+5. Sign with different SIGHASH flags, [more examples](https://github.com/gitzhou/bsvlib/tree/master/examples)
 
 ```python
 from bsvlib import Key, Wallet, Transaction, TxInput, TxOutput
@@ -96,7 +125,7 @@ t.sign()
 print(t.add_change().broadcast())
 ```
 
-5. Sign arbitrary text with private key
+6. Sign arbitrary text with private key
 
 ```python
 from bsvlib import Key, verify_signed_text
@@ -114,7 +143,7 @@ print(address, signature)
 print(verify_signed_text(text, address, signature))
 ```
 
-6. Encrypt message with public key, decrypt with the corresponding private key
+7. Encrypt message with public key, decrypt with the corresponding private key
 
 ```python
 from bsvlib import Key
@@ -132,7 +161,7 @@ print(encrypted)
 print(private_key.decrypt_text(encrypted))
 ```
 
-7. Process HD wallet derivation
+8. Process HD wallet derivation
 
 ![image](https://user-images.githubusercontent.com/1585505/150875831-2663e158-b00d-4089-8276-1ad72e335d28.png)
 

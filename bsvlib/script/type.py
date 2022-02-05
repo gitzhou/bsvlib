@@ -3,7 +3,7 @@ from typing import Union, List
 
 from .script import Script
 from ..constants import PUBLIC_KEY_HASH_BYTE_LENGTH, OP, SIGHASH, PUBLIC_KEY_BYTE_LENGTH_LIST
-from ..utils import address_to_public_key_hash, encode_pushdata
+from ..utils import address_to_public_key_hash, encode_pushdata, encode_int
 
 
 class ScriptType(metaclass=ABCMeta):
@@ -142,3 +142,34 @@ class P2pkScriptType(ScriptType):
     @classmethod
     def estimated_unlocking_byte_length(cls, **kwargs) -> int:  # pragma: no cover
         return 73
+
+
+class BareMultisigScriptType(ScriptType):
+
+    def __str__(self) -> str:  # pragma: no cover
+        return '<ScriptType:BareMultisig>'
+
+    @classmethod
+    def locking(cls, participants: List[Union[str, bytes]], threshold: int) -> Script:
+        assert 1 <= threshold <= len(participants), 'bad threshold or number of participants'
+        script: bytes = encode_int(threshold)
+        for participant in participants:
+            assert type(participant).__name__ in ['str', 'bytes'], 'unsupported public key type'
+            if isinstance(participant, str):
+                participant = bytes.fromhex(participant)
+            assert len(participant) in PUBLIC_KEY_BYTE_LENGTH_LIST, 'invalid byte length of public key'
+            script += encode_pushdata(participant)
+        return Script(script + encode_int(len(participants)) + OP.OP_CHECKMULTISIG)
+
+    @classmethod
+    def unlocking(cls, **kwargs) -> Script:
+        signatures: List[bytes] = kwargs.get('signatures')
+        sighash: SIGHASH = kwargs.get('sighash')
+        script: bytes = OP.OP_0
+        for signature in signatures:
+            script += encode_pushdata(signature + sighash.to_bytes(1, 'little'))
+        return Script(script)
+
+    @classmethod
+    def estimated_unlocking_byte_length(cls, **kwargs) -> int:  # pragma: no cover
+        return 1 + 73 * len(kwargs.get('private_keys'))

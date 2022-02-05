@@ -1,10 +1,10 @@
 import pytest
 
-from bsvlib.constants import SIGHASH
+from bsvlib.constants import SIGHASH, OP
 from bsvlib.keys import Key
 from bsvlib.script.script import Script
-from bsvlib.script.type import P2pkhScriptType, OpReturnScriptType, P2pkScriptType
-from bsvlib.utils import address_to_public_key_hash
+from bsvlib.script.type import P2pkhScriptType, OpReturnScriptType, P2pkScriptType, BareMultisigScriptType
+from bsvlib.utils import address_to_public_key_hash, encode_int, encode_pushdata
 
 
 def test_script():
@@ -58,3 +58,14 @@ def test_p2pk():
 
     payload = {'signatures': [b'\x00'], 'sighash': SIGHASH.ALL_FORKID}
     assert P2pkScriptType.unlocking(**payload).hex() == '020041'
+
+
+def test_bare_multisig():
+    pk1, pk2, pk3 = Key().public_key(), Key().public_key(), Key().public_key()
+    pks = [pk1.hex(), pk2.serialize(compressed=False), pk3.serialize()]
+    encoded_pks = b''.join([encode_pushdata(pk if isinstance(pk, bytes) else bytes.fromhex(pk)) for pk in pks])
+    expected_locking = encode_int(2) + encoded_pks + encode_int(3) + OP.OP_CHECKMULTISIG
+    assert BareMultisigScriptType.locking(pks, 2).serialize() == expected_locking
+
+    payload = {'signatures': [b'\x00', b'\x01'], 'sighash': SIGHASH.ALL_FORKID}
+    assert BareMultisigScriptType.unlocking(**payload).hex() == '00' + '020041' + '020141'
