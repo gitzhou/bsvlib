@@ -8,7 +8,7 @@ from .provider import Provider
 from ..constants import Chain, METASV_TOKEN
 
 
-class MetaSV(Provider):
+class MetaSV(Provider):  # pragma: no cover
 
     def __init__(self, token: Optional[str] = None, headers: Optional[Dict] = None, timeout: Optional[int] = None):
         super().__init__(Chain.MAIN, headers, timeout)
@@ -22,10 +22,10 @@ class MetaSV(Provider):
             params = {}
             if flag:
                 params['flag'] = flag
-            if confirmed is not None:  # pragma: no cover
+            if confirmed is not None:
                 params['confirmed'] = confirmed.__str__().lower()
             return self.get(url=f'{self.url}/address/{address}/utxo', params=params)
-        return []  # pragma: no cover
+        return []
 
     def get_unspents(self, **kwargs) -> List[Dict]:
         """
@@ -41,21 +41,21 @@ class MetaSV(Provider):
                 total_unspents.extend(paged_unspents or [])
             # parsing
             unspents: List[Dict] = []
-            for item in total_unspents:  # pragma: no cover
+            for item in total_unspents:
                 unspent = {'txid': item['txid'], 'vout': item['outIndex'], 'satoshi': item['value'], 'height': item['height']}
                 unspent.update(kwargs)
                 unspents.append(unspent)
             return unspents
-        return []  # pragma: no cover
+        return []
 
     def get_balance(self, **kwargs) -> int:
         with suppress(Exception):
             address, _, _ = self.parse_kwargs(**kwargs)
             r: Dict = self.get(url=f'{self.url}/address/{address}/balance')
             return r.get('confirmed') + r.get('unconfirmed')
-        return 0  # pragma: no cover
+        return 0
 
-    def broadcast(self, raw: str) -> Optional[str]:  # pragma: no cover
+    def broadcast(self, raw: str) -> Optional[str]:
         with suppress(Exception):
             data = json.dumps({'hex': raw})
             r = requests.post(f'{self.url}/tx/broadcast', headers=self.headers, data=data, timeout=self.timeout)
