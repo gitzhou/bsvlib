@@ -17,13 +17,11 @@ class MetaSV(Provider):  # pragma: no cover
         self.url = 'https://apiv2.metasv.com'
         self.headers.update({'Authorization': f'Bearer {self.token}', })
 
-    def _get_unspents(self, address: str, flag: Optional[int] = None, confirmed: Optional[bool] = None) -> Union[Dict, List[Dict]]:
+    def _get_unspents(self, address: str, flag: Optional[str] = None) -> Union[Dict, List[Dict]]:
         with suppress(Exception):
             params = {}
             if flag:
                 params['flag'] = flag
-            if confirmed is not None:
-                params['confirmed'] = confirmed.__str__().lower()
             return self.get(url=f'{self.url}/address/{address}/utxo', params=params)
         return []
 
@@ -34,10 +32,10 @@ class MetaSV(Provider):  # pragma: no cover
         with suppress(Exception):
             address, _, _ = self.parse_kwargs(**kwargs)
             # paging
-            paged_unspents: List[Dict] = self._get_unspents(address, confirmed=kwargs.get('confirmed'))
+            paged_unspents: List[Dict] = self._get_unspents(address)
             total_unspents: List[Dict] = paged_unspents
             while paged_unspents:
-                paged_unspents = self._get_unspents(address, paged_unspents[-1]['flag'], kwargs.get('confirmed'))
+                paged_unspents = self._get_unspents(address, paged_unspents[-1]['flag'])
                 total_unspents.extend(paged_unspents or [])
             # parsing
             unspents: List[Dict] = []
