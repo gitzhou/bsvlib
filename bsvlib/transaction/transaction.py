@@ -11,7 +11,7 @@ from ..script.script import Script
 from ..script.type import ScriptType, P2pkhScriptType, OpReturnScriptType, UnknownScriptType
 from ..service.provider import Provider
 from ..service.service import Service
-from ..utils import unsigned_to_varint
+from ..utils import unsigned_to_varint, is_hex
 
 
 class InsufficientFunds(ValueError):
@@ -20,19 +20,19 @@ class InsufficientFunds(ValueError):
 
 class TxInput:
 
-    def __init__(self, unspent: Unspent, private_keys: Optional[List[PrivateKey]] = None, unlocking_script: Optional[Script] = None,
+    def __init__(self, unspent: Unspent = None, private_keys: Optional[List[PrivateKey]] = None, unlocking_script: Optional[Script] = None,
                  sequence: int = TRANSACTION_SEQUENCE, sighash: SIGHASH = SIGHASH.ALL_FORKID):
-        self.txid: str = unspent.txid
-        self.vout: int = unspent.vout
-        self.satoshi: int = unspent.satoshi
-        self.height: int = unspent.height
-        self.confirmations: int = unspent.confirmations
-        self.private_keys: List[PrivateKey] = private_keys or unspent.private_keys or []
-        self.script_type: ScriptType = unspent.script_type
-        self.locking_script: Script = unspent.locking_script
+        self.txid: str = unspent.txid if unspent else ""
+        self.vout: int = unspent.vout if unspent else 0
+        self.satoshi: int = unspent.satoshi if unspent else 0
+        self.height: int = unspent.height if unspent else 0
+        self.confirmations: int = unspent.confirmations if unspent else 0
+        self.private_keys: List[PrivateKey] = private_keys or unspent.private_keys if unspent else []
+        self.script_type: ScriptType = unspent.script_type if unspent else None
+        self.locking_script: Script = unspent.locking_script if unspent else None
 
         self.unlocking_script: Script = unlocking_script
-        self.sequence: int = sequence
+        self.sequence: int = sequence or 0
         self.sighash: SIGHASH = sighash
 
     def serialize(self) -> bytes:
@@ -43,6 +43,14 @@ class TxInput:
         stream.write(self.unlocking_script.serialize() if self.unlocking_script else b'')
         stream.write(self.sequence.to_bytes(4, 'little'))
         return stream.getvalue()
+
+    def unserialize(self,stream: bytes) -> int:
+        self.txid = stream[:32][::-1].hex()
+        self.vout = int.from_bytes(stream[32:36],"little")
+        script_size = int.from_bytes(stream[36:37], "big")
+        self.unlocking_script = Script(stream[37:37+script_size])
+        self.sequence = int.from_bytes(stream[37+script_size:41+script_size],"little")
+        return 41+script_size
 
     def __str__(self) -> str:  # pragma: no cover
         return f'<TxInput outpoint={self.txid}:{self.vout} satoshi={self.satoshi} locking_script={self.locking_script}>'
@@ -65,10 +73,19 @@ class TxOutput:
             self.locking_script: Script = out
             self.script_type: ScriptType = script_type
         else:
-            raise TypeError('unsupported transaction output type')
+            self.locking_script: Script = None
+            self.script_type: ScriptType = script_type
 
     def serialize(self) -> bytes:
         return self.satoshi.to_bytes(8, 'little') + self.locking_script.byte_length_varint() + self.locking_script.serialize()
+
+    def unserialize(self, stream: bytes) -> int:
+        self.satoshi = int.from_bytes(stream[:8], "little")
+        script_size = int.from_bytes(stream[8:9], "big")
+        self.locking_script = Script(stream[9:9+script_size])
+
+        return 9+script_size
+
 
     def __str__(self) -> str:  # pragma: no cover
         return f'<TxOutput satoshi={self.satoshi} locking_script={self.locking_script.hex()}>'
@@ -98,6 +115,12 @@ class Transaction:
             raw += tx_output.serialize()
         raw += self.locktime.to_bytes(4, 'little')
         return raw
+
+    def unserialize(self, serial_data: bytes):
+        if is_hex(serial_data):
+            return unserialze_transaction(self, serial_data)
+        else:
+            raise ValueError('unsupported transaction format')
 
     def add_input(self, tx_input: Union[TxInput, Unspent]) -> 'Transaction':  # pragma: no cover
         if isinstance(tx_input, TxInput):
@@ -289,3 +312,25 @@ class Transaction:
         if self.fee() < fee_expected:
             raise InsufficientFunds(f'require {self.satoshi_total_out() + fee_expected} satoshi but only {self.satoshi_total_in()}')
         return Service(self.chain, self.provider).broadcast(self.hex())
+
+def unserialze_transaction(t: Transaction, serial_data: bytes):
+    t.version = int.from_bytes(serial_data[:4], "little")
+    input_size = int.from_bytes(serial_data[4:5], "big")
+    index = 5
+
+    for _ in range(input_size):
+        txinput = TxInput()
+        tx_len = txinput.unserialize(serial_data[index:])
+        t.add_input(txinput)
+        index += tx_len
+
+    output_size = int.from_bytes(serial_data[index:index+1], "big")
+    index += 1
+
+    for _ in range(output_size):
+        txoutput = TxOutput(None)
+        tx_len = txoutput.unserialize(serial_data[index:])
+        t.add_output(txoutput)
+        index += tx_len
+
+    t.locktime = int.from_bytes(serial_data[index:index+4], "little")
