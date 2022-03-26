@@ -1,5 +1,4 @@
 import re
-import string
 from base64 import b64encode, b64decode
 from contextlib import suppress
 from typing import Tuple, Optional, Union
@@ -270,8 +269,3 @@ def bits_to_bytes(bits: str) -> bytes:
     convert binary 0/1 string to the least number of bytes
     """
     return unsigned_to_bytes(int(bits, 2))
-
-def is_hex(hextx: bytes) -> bool:
-    hex_digits = set(string.hexdigits)
-
-    return len(hextx.hex()) % 2 == 0 and all(c in hex_digits for c in hextx.hex()) 
