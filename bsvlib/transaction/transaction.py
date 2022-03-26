@@ -72,9 +72,11 @@ class TxOutput:
             # from locking script
             self.locking_script: Script = out
             self.script_type: ScriptType = script_type
-        else:
+        elif out is None:
             self.locking_script: Script = None
             self.script_type: ScriptType = script_type
+        else:
+            raise TypeError('unsupported transaction output type')
 
     def serialize(self) -> bytes:
         return self.satoshi.to_bytes(8, 'little') + self.locking_script.byte_length_varint() + self.locking_script.serialize()
