@@ -117,3 +117,19 @@ def test_transaction():
     assert len(t.tx_outputs) == 2
     assert t.tx_outputs[1].locking_script == P2pkhScriptType.locking(address)
     assert t.tx_outputs[1].satoshi == 787
+
+def test_transaction_unserialize():
+    t = Transaction()
+    t.unserialize(bytes.fromhex("02000000031f5c38dfcf6f1a5f5a87c416076d392c87e6d41970d5ad5e477a02d66bde97580000000000ffffffff7cca453133921c50d5025878f7f738d1df891fd359763331935784cf6b9c82bf1200000000fffffffffccd319e04a996c96cfc0bf4c07539aa90bd0b1a700ef72fae535d6504f9a6220100000000ffffffff0280a81201000000001976a9141fc11f39be1729bf973a7ab6a615ca4729d6457488ac0084d717000000001976a914f2d4db28cad6502226ee484ae24505c2885cb12d88ac00000000"))
+
+    assert t.txid() == "fe7d174f42dce0cffa7a527e9bc8368956057619ec817648f6138b98f2533e8f"
+    assert t.version == 2
+    assert t.locktime == 0
+    assert len(t.tx_inputs) == 3
+    assert t.tx_inputs[0].txid == "5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f"
+    assert t.tx_inputs[0].vout == 0
+    assert str(t.tx_inputs[0].unlocking_script) == "" 
+    assert t.tx_inputs[0].sequence == 4294967295
+    assert len(t.tx_outputs) == 2
+    assert t.tx_outputs[0].satoshi == 18000000
+    assert t.tx_outputs[0].locking_script.hex() == "76a9141fc11f39be1729bf973a7ab6a615ca4729d6457488ac"
