@@ -11,9 +11,9 @@ from ..script.type import P2pkScriptType
 
 class SensibleQuery(Provider):
 
-    def __init__(self, headers: Optional[Dict] = None, timeout: Optional[int] = None):
-        super().__init__(Chain.MAIN, headers, timeout)
-        self.url: str = 'https://api.sensiblequery.com'
+    def __init__(self, chain: Chain = Chain.MAIN, headers: Optional[Dict] = None, timeout: Optional[int] = None):
+        super().__init__(chain, headers, timeout)
+        self.url: str = 'https://api.sensiblequery.com' + ('' if chain == Chain.MAIN else '/test')
 
     def get_unspents(self, **kwargs) -> List[Dict]:
         """
