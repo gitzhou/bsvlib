@@ -279,16 +279,19 @@ class PrivateKey:
         return f'<PrivateKey wif={self.wif()} int={self.int()}>'
 
     @classmethod
-    def from_hex(cls, value: str) -> 'PrivateKey':
-        return PrivateKey(CcPrivateKey.from_hex(value))
+    def from_hex(cls, octets: Union[str, bytes]) -> 'PrivateKey':
+        b: bytes = octets if isinstance(octets, bytes) else bytes.fromhex(octets)
+        return PrivateKey(CcPrivateKey(b))
 
     @classmethod
-    def from_der(cls, value: bytes) -> 'PrivateKey':  # pragma: no cover
-        return PrivateKey(CcPrivateKey.from_der(value))
+    def from_der(cls, octets: Union[str, bytes]) -> 'PrivateKey':  # pragma: no cover
+        b: bytes = octets if isinstance(octets, bytes) else bytes.fromhex(octets)
+        return PrivateKey(CcPrivateKey.from_der(b))
 
     @classmethod
-    def from_pem(cls, value: bytes) -> 'PrivateKey':  # pragma: no cover
-        return PrivateKey(CcPrivateKey.from_pem(value))
+    def from_pem(cls, octets: Union[str, bytes]) -> 'PrivateKey':  # pragma: no cover
+        b: bytes = octets if isinstance(octets, bytes) else bytes.fromhex(octets)
+        return PrivateKey(CcPrivateKey.from_pem(b))
 
 
 def verify_signed_text(text: str, address: str, signature: str, hasher: Optional[Callable[[bytes], bytes]] = hash256) -> bool:
