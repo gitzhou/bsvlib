@@ -5,7 +5,7 @@ from bsvlib.hash import hash256
 from bsvlib.keys import Key
 from bsvlib.script.script import Script
 from bsvlib.script.type import P2pkhScriptType
-from bsvlib.transaction.transaction import TxOutput, Transaction, TransactionBytesIO
+from bsvlib.transaction.transaction import TxInput, TxOutput, Transaction, TransactionBytesIO
 from bsvlib.transaction.unspent import Unspent
 from bsvlib.utils import encode_pushdata
 
@@ -48,6 +48,7 @@ digest3 = bytes.fromhex(
 
 
 def test_output():
+    assert TxOutput().locking_script == Script()
     assert TxOutput(['123', '456']).locking_script == Script('006a' + '03313233' + '03343536')
 
     with pytest.raises(TypeError, match=r'unsupported transaction output type'):
@@ -140,3 +141,34 @@ def test_transaction_bytes_io():
     with pytest.raises(AssertionError):
         io.read_varint()
 
+
+def test_from_hex():
+    assert TxInput.from_hex('') is None
+    assert TxOutput.from_hex('') is None
+    assert Transaction.from_hex('') is None
+
+    raw_tx = '01000000' \
+             '03' \
+             '7a7b64d59a072867d7453b2eb67e0fb883af0f435cbbeffc2bb5a4b13e3f6e08' \
+             '01000000' \
+             '6b4830450221008b6f070f73242c7c8c654f493dd441d46dc7b2365c8e9e4c62732da0fb535c5802204b96edfb934d08ad0cfaa9bf75887bd8541498fbe19189d45683dcbd0785d0df41' \
+             '2102e46dcd7991e5a4bd642739249b0158312e1aee56a60fd1bf622172ffe65bd789' \
+             'ffffffff' \
+             '7a7b64d59a072867d7453b2eb67e0fb883af0f435cbbeffc2bb5a4b13e3f6e08' \
+             '03000000' \
+             '6a4730440220501dae7c51c6e5cb0f12a635ccbc61e283cb2e838d624d7df7f1ba1b0ab2087b02207f67f3883735464f6067357c901fc1b8ddf8bf8695b54b2790d6a0106acf234041' \
+             '2102e46dcd7991e5a4bd642739249b0158312e1aee56a60fd1bf622172ffe65bd789' \
+             'ffffffff' \
+             '7a7b64d59a072867d7453b2eb67e0fb883af0f435cbbeffc2bb5a4b13e3f6e08' \
+             '02000000' \
+             '8b483045022100b04829882018f7488508cb8587612fb017584ffc2b4d22e4300b95178be642a302207937cb643eef061b53704144148bec25645fbbaf4eedd5586ad9b018d4f6c9d441' \
+             '4104e46dcd7991e5a4bd642739249b0158312e1aee56a60fd1bf622172ffe65bd78997693d32c540ac253de7a3dc73f7e4ba7b38d2dc1ecc8e07920b496fb107d6b2' \
+             'ffffffff' \
+             '02' \
+             '0a1a000000000000' \
+             '1976a9146a176cd51593e00542b8e1958b7da2be97452d0588ac' \
+             '05ea1c0000000000' \
+             '1976a9146a176cd51593e00542b8e1958b7da2be97452d0588ac' \
+             '00000000'
+    t = Transaction.from_hex(raw_tx)
+    assert t.txid() == 'e8c6b26f26d90e9cf035762a91479635a75eff2b3b2845663ed72a2397acdfd2'

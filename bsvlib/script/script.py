@@ -5,11 +5,13 @@ from ..utils import unsigned_to_varint
 
 class Script:
 
-    def __init__(self, script: Union[str, bytes]):
+    def __init__(self, script: Union[str, bytes, None] = None):
         """
         create script from hex string or bytes
         """
-        if isinstance(script, str):
+        if script is None:
+            self.script: bytes = b''
+        elif isinstance(script, str):
             # script in hex string
             self.script: bytes = bytes.fromhex(script)
         elif isinstance(script, bytes):

@@ -12,6 +12,10 @@ def test_script():
     assert Script(locking_script) == Script(bytes.fromhex(locking_script))
     assert Script(locking_script).hex() == locking_script
 
+    assert Script().serialize() == b''
+    assert Script().hex() == ''
+    assert Script().byte_length() == 0
+
     with pytest.raises(TypeError, match=r'unsupported script type'):
         # noinspection PyTypeChecker
         Script(1)

@@ -1,4 +1,5 @@
 import math
+from contextlib import suppress
 from io import BytesIO
 from typing import List, Optional, Union, Dict, Any
 
@@ -57,16 +58,16 @@ class TransactionBytesIO(BytesIO):
 
 class TxInput:
 
-    def __init__(self, unspent: Unspent, private_keys: Optional[List[PrivateKey]] = None, unlocking_script: Optional[Script] = None,
+    def __init__(self, unspent: Optional[Unspent] = None, private_keys: Optional[List[PrivateKey]] = None, unlocking_script: Optional[Script] = None,
                  sequence: int = TRANSACTION_SEQUENCE, sighash: SIGHASH = SIGHASH.ALL_FORKID):
-        self.txid: str = unspent.txid
-        self.vout: int = unspent.vout
-        self.satoshi: int = unspent.satoshi
-        self.height: int = unspent.height
-        self.confirmations: int = unspent.confirmations
-        self.private_keys: List[PrivateKey] = private_keys or unspent.private_keys or []
-        self.script_type: ScriptType = unspent.script_type
-        self.locking_script: Script = unspent.locking_script
+        self.txid: str = unspent.txid if unspent else ('00' * 32)
+        self.vout: int = unspent.vout if unspent else 0
+        self.satoshi: int = unspent.satoshi if unspent else 0
+        self.height: int = unspent.height if unspent else -1
+        self.confirmations: int = unspent.confirmations if unspent else 0
+        self.private_keys: List[PrivateKey] = private_keys or (unspent.private_keys if unspent else [])
+        self.script_type: ScriptType = unspent.script_type if unspent else UnknownScriptType
+        self.locking_script: Script = unspent.locking_script if unspent else Script()
 
         self.unlocking_script: Script = unlocking_script
         self.sequence: int = sequence
@@ -84,12 +85,31 @@ class TxInput:
     def __str__(self) -> str:  # pragma: no cover
         return f'<TxInput outpoint={self.txid}:{self.vout} satoshi={self.satoshi} locking_script={self.locking_script}>'
 
+    @classmethod
+    def from_hex(cls, stream: Union[str, bytes, TransactionBytesIO]) -> Optional['TxInput']:
+        with suppress(Exception):
+            stream = stream if isinstance(stream, TransactionBytesIO) else TransactionBytesIO(stream if isinstance(stream, bytes) else bytes.fromhex(stream))
+            txid = stream.read_bytes(32)[::-1]
+            assert len(txid) == 32
+            vout = stream.read_int(4)
+            assert vout is not None
+            script_length = stream.read_varint()
+            assert script_length is not None
+            unlocking_script_bytes = stream.read_bytes(script_length)
+            sequence = stream.read_int(4)
+            assert sequence is not None
+            return TxInput(unspent=Unspent(txid=txid.hex(), vout=vout, satoshi=0, locking_script=Script()), unlocking_script=Script(unlocking_script_bytes), sequence=sequence)
+        return None
+
 
 class TxOutput:
 
-    def __init__(self, out: Union[str, List[Union[str, bytes]], Script], satoshi: int = 0, script_type: ScriptType = UnknownScriptType):
+    def __init__(self, out: Union[str, List[Union[str, bytes]], Script, None] = None, satoshi: int = 0, script_type: ScriptType = UnknownScriptType()):
         self.satoshi = satoshi
-        if isinstance(out, str):
+        if out is None:
+            self.locking_script: Script = Script()
+            self.script_type: ScriptType = UnknownScriptType()
+        elif isinstance(out, str):
             # from address
             self.locking_script: Script = P2pkhScriptType.locking(out)
             self.script_type: ScriptType = P2pkhScriptType()
@@ -109,6 +129,18 @@ class TxOutput:
 
     def __str__(self) -> str:  # pragma: no cover
         return f'<TxOutput satoshi={self.satoshi} locking_script={self.locking_script.hex()}>'
+
+    @classmethod
+    def from_hex(cls, stream: Union[str, bytes, TransactionBytesIO]) -> Optional['TxOutput']:
+        with suppress(Exception):
+            stream = stream if isinstance(stream, TransactionBytesIO) else TransactionBytesIO(stream if isinstance(stream, bytes) else bytes.fromhex(stream))
+            satoshi = stream.read_int(8)
+            assert satoshi is not None
+            script_length = stream.read_varint()
+            assert script_length is not None
+            locking_script_bytes = stream.read_bytes(script_length)
+            return TxOutput(out=Script(locking_script_bytes), satoshi=satoshi)
+        return None
 
 
 class Transaction:
@@ -326,3 +358,27 @@ class Transaction:
         if self.fee() < fee_expected:
             raise InsufficientFunds(f'require {self.satoshi_total_out() + fee_expected} satoshi but only {self.satoshi_total_in()}')
         return Service(self.chain, self.provider).broadcast(self.hex())
+
+    @classmethod
+    def from_hex(cls, stream: Union[str, bytes, TransactionBytesIO]) -> Optional['Transaction']:
+        with suppress(Exception):
+            stream = stream if isinstance(stream, TransactionBytesIO) else TransactionBytesIO(stream if isinstance(stream, bytes) else bytes.fromhex(stream))
+            t = Transaction()
+            t.version = stream.read_int(4)
+            assert t.version is not None
+            inputs_count = stream.read_varint()
+            assert inputs_count is not None
+            for _ in range(inputs_count):
+                _input = TxInput.from_hex(stream)
+                assert _input is not None
+                t.tx_inputs.append(_input)
+            outputs_count = stream.read_varint()
+            assert outputs_count is not None
+            for _ in range(outputs_count):
+                _output = TxOutput.from_hex(stream)
+                assert _output is not None
+                t.tx_outputs.append(_output)
+            t.locktime = stream.read_int(4)
+            assert t.locktime is not None
+            return t
+        return None
