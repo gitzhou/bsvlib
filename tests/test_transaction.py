@@ -5,7 +5,7 @@ from bsvlib.hash import hash256
 from bsvlib.keys import Key
 from bsvlib.script.script import Script
 from bsvlib.script.type import P2pkhScriptType
-from bsvlib.transaction.transaction import TxOutput, Transaction
+from bsvlib.transaction.transaction import TxOutput, Transaction, TransactionBytesIO
 from bsvlib.transaction.unspent import Unspent
 from bsvlib.utils import encode_pushdata
 
@@ -117,3 +117,26 @@ def test_transaction():
     assert len(t.tx_outputs) == 2
     assert t.tx_outputs[1].locking_script == P2pkhScriptType.locking(address)
     assert t.tx_outputs[1].satoshi == 787
+
+
+def test_transaction_bytes_io():
+    io = TransactionBytesIO(bytes.fromhex('0011223344556677889912fd1234fe12345678ff1234567890abcdef00112233'))
+
+    assert io.read_bytes(4) == bytes.fromhex('00112233')
+    assert io.read_int(1) == int.from_bytes(bytes.fromhex('44'), 'little')
+    assert io.read_int(2) == int.from_bytes(bytes.fromhex('5566'), 'little')
+    assert io.read_int(3, 'big') == int.from_bytes(bytes.fromhex('778899'), 'big')
+    assert io.read_varint() == int.from_bytes(bytes.fromhex('12'), 'little')
+    assert io.read_varint() == int.from_bytes(bytes.fromhex('1234'), 'little')
+    assert io.read_varint() == int.from_bytes(bytes.fromhex('12345678'), 'little')
+    assert io.read_varint() == int.from_bytes(bytes.fromhex('1234567890abcdef'), 'little')
+
+    assert io.read_bytes() == bytes.fromhex('00112233')
+    assert io.read_bytes() == b''
+    assert io.read_bytes(1) == b''
+
+    with pytest.raises(AssertionError):
+        io.read_int(1)
+    with pytest.raises(AssertionError):
+        io.read_varint()
+

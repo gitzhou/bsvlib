@@ -2,6 +2,8 @@ import math
 from io import BytesIO
 from typing import List, Optional, Union, Dict, Any
 
+from typing_extensions import Literal
+
 from .unspent import Unspent
 from ..constants import SIGHASH, Chain
 from ..constants import TRANSACTION_VERSION, TRANSACTION_LOCKTIME, TRANSACTION_SEQUENCE, TRANSACTION_FEE_RATE, P2PKH_DUST_LIMIT
@@ -16,6 +18,41 @@ from ..utils import unsigned_to_varint
 
 class InsufficientFunds(ValueError):
     pass
+
+
+class TransactionBytesIO(BytesIO):
+
+    def read_bytes(self, byte_length: Optional[int] = None) -> bytes:
+        """
+        Read and return up to size bytes.
+        If the argument is omitted, None, or negative, data is read and returned until EOF is reached
+        An empty bytes object is returned if the stream is already at EOF.
+        """
+        return self.read(byte_length)
+
+    def read_int(self, byte_length: int, byteorder: Literal['big', 'little'] = 'little') -> int:
+        """
+        :returns: None if the stream is already at EOF
+        """
+        octets = self.read_bytes(byte_length)
+        assert octets
+        return int.from_bytes(octets, byteorder=byteorder)
+
+    def read_varint(self) -> int:
+        """
+        :returns: None if the stream is already at EOF
+        """
+        octets = self.read_bytes(1)
+        assert octets
+        octets = ord(octets)
+        if octets <= 0xfc:
+            return octets
+        elif octets == 0xfd:
+            return self.read_int(2)
+        elif octets == 0xfe:
+            return self.read_int(4)
+        else:
+            return self.read_int(8)
 
 
 class TxInput:
