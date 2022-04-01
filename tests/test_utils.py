@@ -54,7 +54,9 @@ def test_address():
         decode_address(address_invalid_checksum)
 
     assert validate_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')
-    assert validate_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdBC')
+    assert validate_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', Chain.MAIN)
+    assert not validate_address('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', Chain.TEST)
+    assert validate_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdBC', Chain.TEST)
     assert not validate_address('moEoqh2ZfYU8jN5EG6ERw6E3DmwnkuTdB')
     assert not validate_address('')
     assert not validate_address(address_invalid_prefix)

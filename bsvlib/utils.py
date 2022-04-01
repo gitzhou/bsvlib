@@ -49,12 +49,14 @@ def decode_address(address: str) -> Tuple[bytes, Chain]:
     return decoded[1:], chain
 
 
-def validate_address(address: str) -> bool:
+def validate_address(address: str, chain: Optional[Chain] = None) -> bool:
     """
     :returns: True if address is a valid bitcoin legacy address (P2PKH)
     """
     with suppress(Exception):
-        decode_address(address)
+        _, _chain = decode_address(address)
+        if chain is not None:
+            return _chain == chain
         return True
     return False
 
