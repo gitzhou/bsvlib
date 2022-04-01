@@ -1,2 +1,2 @@
-from .transaction import TxInput, TxOutput, Transaction, InsufficientFunds
+from .transaction import TxInput, TxOutput, Transaction, InsufficientFunds, TransactionBytesIO
 from .unspent import Unspent
