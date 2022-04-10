@@ -359,6 +359,26 @@ class Transaction:
             raise InsufficientFunds(f'require {self.satoshi_total_out() + fee_expected} satoshi but only {self.satoshi_total_in()}')
         return Service(self.chain, self.provider).broadcast(self.hex())
 
+    def to_unspent(self, vout: int, **kwargs) -> Optional[Unspent]:
+        assert 0 <= vout < len(self.tx_outputs), 'vout out of range'
+        out = self.tx_outputs[vout]
+        if out.script_type in [OpReturnScriptType()]:
+            return None
+        return Unspent(txid=self.txid(), vout=vout, satoshi=out.satoshi, script_type=out.script_type, locking_script=out.locking_script, **kwargs)
+
+    def to_unspents(self, vouts: Optional[List[int]] = None, args: Optional[List[Dict]] = None) -> List[Unspent]:
+        """
+        parse all the outputs to unspents if vouts is None or empty, OP_RETURN outputs will be omitted
+        """
+        vouts = vouts or range(len(self.tx_outputs))
+        unspents = []
+        for i in range(len(vouts)):
+            arg = args[i] if args and 0 <= i < len(args) else {}
+            unspent = self.to_unspent(vouts[i], **arg)
+            if unspent:
+                unspents.append(unspent)
+        return unspents
+
     @classmethod
     def from_hex(cls, stream: Union[str, bytes, TransactionBytesIO]) -> Optional['Transaction']:
         with suppress(Exception):
