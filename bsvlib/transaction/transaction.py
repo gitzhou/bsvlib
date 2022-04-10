@@ -345,7 +345,7 @@ class Transaction:
             if not change_address:
                 for tx_input in self.tx_inputs:  # pragma: no cover
                     if tx_input.script_type == P2pkhScriptType():
-                        change_output = TxOutput(out=tx_input.locking_script, satoshi=fee_overpaid)
+                        change_output = TxOutput(out=tx_input.locking_script, satoshi=fee_overpaid, script_type=P2pkhScriptType())
                         break
             else:
                 change_output = TxOutput(out=change_address, satoshi=fee_overpaid)
