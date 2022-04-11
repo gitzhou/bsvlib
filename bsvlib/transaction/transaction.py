@@ -147,14 +147,18 @@ class Transaction:
 
     def __init__(self, tx_inputs: Optional[List[TxInput]] = None, tx_outputs: Optional[List[TxOutput]] = None,
                  version: int = TRANSACTION_VERSION, locktime: int = TRANSACTION_LOCKTIME, fee_rate: Optional[float] = None,
-                 chain: Chain = Chain.MAIN, provider: Provider = None, **kwargs):
+                 chain: Optional[Chain] = None, provider: Optional[Provider] = None, **kwargs):
         self.tx_inputs: List[TxInput] = tx_inputs or []
         self.tx_outputs: List[TxOutput] = tx_outputs or []
         self.version: int = version
         self.locktime: int = locktime
         self.fee_rate: float = fee_rate if fee_rate is not None else TRANSACTION_FEE_RATE
+
         self.chain: Chain = chain
         self.provider: Provider = provider
+        if self.provider:
+            self.chain = self.provider.chain
+
         self.kwargs: Dict[str, Any] = dict(**kwargs) or {}
 
     def serialize(self) -> bytes:

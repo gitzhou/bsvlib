@@ -44,6 +44,6 @@ class Unspent:
         return f'{self.txid}:{self.vout}'.__hash__()
 
     @classmethod
-    def get_unspents(cls, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs) -> List['Unspent']:
+    def get_unspents(cls, chain: Optional[Chain] = None, provider: Optional[Provider] = None, **kwargs) -> List['Unspent']:
         unspents = Service(chain, provider).get_unspents(**kwargs)
         return [Unspent(**unspent) for unspent in unspents]

@@ -1,10 +1,11 @@
 import pytest
 
-from bsvlib.constants import SIGHASH
+from bsvlib.constants import SIGHASH, Chain
 from bsvlib.hash import hash256
 from bsvlib.keys import Key
 from bsvlib.script.script import Script
 from bsvlib.script.type import P2pkhScriptType, P2pkScriptType
+from bsvlib.service import WhatsOnChain, SensibleQuery
 from bsvlib.transaction.transaction import TxInput, TxOutput, Transaction, TransactionBytesIO
 from bsvlib.transaction.unspent import Unspent
 from bsvlib.utils import encode_pushdata
@@ -214,3 +215,28 @@ def test_parse_outputs():
     assert unspents012 == [_unspent1, _unspent2]
     assert unspents012[0].script_type == P2pkhScriptType() and unspents012[0].height == 2000 and unspents012[0].private_keys == []
     assert unspents012[1].script_type == P2pkScriptType() and unspents012[1].height == -1 and unspents012[1].private_keys == [k]
+
+
+def test_chain_provider():
+    t = Transaction()
+    assert t.chain is None
+    assert t.provider is None
+
+    t = Transaction(chain=Chain.TEST)
+    assert t.chain == Chain.TEST
+    assert t.provider is None
+
+    t = Transaction(provider=WhatsOnChain())
+    assert t.chain == Chain.MAIN
+    assert isinstance(t.provider, WhatsOnChain)
+    assert t.provider.chain == Chain.MAIN
+
+    t = Transaction(chain=Chain.TEST, provider=WhatsOnChain())
+    assert t.chain == Chain.MAIN
+    assert isinstance(t.provider, WhatsOnChain)
+    assert t.provider.chain == Chain.MAIN
+
+    t = Transaction(provider=SensibleQuery(Chain.TEST))
+    assert t.chain == Chain.TEST
+    assert isinstance(t.provider, SensibleQuery)
+    assert t.provider.chain == Chain.TEST

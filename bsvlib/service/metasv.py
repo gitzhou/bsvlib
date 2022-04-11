@@ -10,7 +10,8 @@ from ..constants import Chain, METASV_TOKEN
 
 class MetaSV(Provider):  # pragma: no cover
 
-    def __init__(self, token: Optional[str] = None, headers: Optional[Dict] = None, timeout: Optional[int] = None):
+    def __init__(self, chain: Chain = Chain.MAIN, headers: Optional[Dict] = None, timeout: Optional[int] = None, token: Optional[str] = None):
+        assert chain == Chain.MAIN, 'MetaSV service only supports Chain.MAIN'
         super().__init__(Chain.MAIN, headers, timeout)
         self.token = token or METASV_TOKEN
         assert self.token, 'MetaSV service requires a token'

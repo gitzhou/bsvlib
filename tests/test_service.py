@@ -15,7 +15,7 @@ def test_service():
 
 def test_metasv():
     if METASV_TOKEN:
-        service = MetaSV(METASV_TOKEN)
+        service = MetaSV(token=METASV_TOKEN)
         address = '13LGR1QjYkdi4adZV1Go6cQTxFYjquhS1y'
         unspents = service.get_unspents(address=address)
         balance = service.get_balance(address=address)

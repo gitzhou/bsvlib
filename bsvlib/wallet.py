@@ -19,12 +19,15 @@ def get_balance_wrapper(chain: Chain, provider: Provider, d: Dict) -> int:
 
 
 class Wallet:
-    def __init__(self, keys: Optional[List[Union[str, int, bytes, PrivateKey]]] = None, chain: Chain = Chain.MAIN, provider: Optional[Provider] = None, **kwargs):
+    def __init__(self, keys: Optional[List[Union[str, int, bytes, PrivateKey]]] = None, chain: Optional[Chain] = None, provider: Optional[Provider] = None, **kwargs):
         """
         create an empty wallet if keys is None
         """
-        self.chain: Chain = chain
+        self.chain: Chain = chain or Chain.MAIN
         self.provider: Provider = provider
+        if self.provider:
+            self.chain = self.provider.chain
+
         self.keys: List[PrivateKey] = []
         if keys:
             self.add_keys(keys)

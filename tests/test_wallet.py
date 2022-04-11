@@ -1,8 +1,34 @@
+from bsvlib.constants import Chain
 from bsvlib.keys import Key
 from bsvlib.script.type import P2pkScriptType
 from bsvlib.service.sensiblequery import SensibleQuery
 from bsvlib.service.whatsonchain import WhatsOnChain
 from bsvlib.wallet import Wallet
+
+
+def test_chain_provider():
+    w = Wallet()
+    assert w.chain == Chain.MAIN
+    assert w.provider is None
+
+    w = Wallet(chain=Chain.TEST)
+    assert w.chain == Chain.TEST
+    assert w.provider is None
+
+    w = Wallet(provider=WhatsOnChain())
+    assert w.chain == Chain.MAIN
+    assert isinstance(w.provider, WhatsOnChain)
+    assert w.provider.chain == Chain.MAIN
+
+    w = Wallet(chain=Chain.TEST, provider=WhatsOnChain())
+    assert w.chain == Chain.MAIN
+    assert isinstance(w.provider, WhatsOnChain)
+    assert w.provider.chain == Chain.MAIN
+
+    w = Wallet(provider=SensibleQuery(Chain.TEST))
+    assert w.chain == Chain.TEST
+    assert isinstance(w.provider, SensibleQuery)
+    assert w.provider.chain == Chain.TEST
 
 
 def test():
