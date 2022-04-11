@@ -4,7 +4,7 @@ from typing import Optional, List, Dict
 
 import requests
 
-from .provider import Provider
+from .provider import Provider, BroadcastResult
 from ..constants import Chain
 from ..script.type import P2pkScriptType
 
@@ -45,7 +45,7 @@ class SensibleQuery(Provider):
             return r.get('satoshi') + r.get('pendingSatoshi')
         return 0  # pragma: no cover
 
-    def broadcast(self, raw: str) -> (bool, str):  # pragma: no cover
+    def broadcast(self, raw: str) -> BroadcastResult:  # pragma: no cover
         propagated, message = False, ''
         try:
             data = json.dumps({'txHex': raw})
@@ -60,4 +60,4 @@ class SensibleQuery(Provider):
                 propagated, message = False, r.get('msg')
         except Exception as e:
             message = message or str(e)
-        return propagated, message
+        return BroadcastResult(propagated, message)

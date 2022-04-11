@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 
 import requests
 
-from .provider import Provider
+from .provider import Provider, BroadcastResult
 from ..constants import Chain
 
 
@@ -36,7 +36,7 @@ class WhatsOnChain(Provider):
             return r.get('confirmed') + r.get('unconfirmed')
         return 0  # pragma: no cover
 
-    def broadcast(self, raw: str) -> (bool, str):  # pragma: no cover
+    def broadcast(self, raw: str) -> BroadcastResult:  # pragma: no cover
         propagated, message = False, ''
         try:
             data = json.dumps({'txHex': raw})
@@ -46,4 +46,4 @@ class WhatsOnChain(Provider):
             propagated = True
         except Exception as e:
             message = message or str(e)
-        return propagated, message
+        return BroadcastResult(propagated, message)

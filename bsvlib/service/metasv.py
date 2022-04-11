@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Union
 
 import requests
 
-from .provider import Provider
+from .provider import Provider, BroadcastResult
 from ..constants import Chain, METASV_TOKEN
 
 
@@ -54,7 +54,7 @@ class MetaSV(Provider):  # pragma: no cover
             return r.get('confirmed') + r.get('unconfirmed')
         return 0
 
-    def broadcast(self, raw: str) -> (bool, str):
+    def broadcast(self, raw: str) -> BroadcastResult:
         propagated, message = False, ''
         try:
             data = json.dumps({'hex': raw})
@@ -69,4 +69,4 @@ class MetaSV(Provider):  # pragma: no cover
                 propagated, message = False, r.get('message')
         except Exception as e:
             message = message or str(e)
-        return propagated, message
+        return BroadcastResult(propagated, message)

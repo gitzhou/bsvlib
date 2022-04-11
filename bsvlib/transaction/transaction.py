@@ -12,7 +12,7 @@ from ..hash import hash256
 from ..keys import PrivateKey
 from ..script.script import Script
 from ..script.type import ScriptType, P2pkhScriptType, OpReturnScriptType, UnknownScriptType
-from ..service.provider import Provider
+from ..service.provider import Provider, BroadcastResult
 from ..service.service import Service
 from ..utils import unsigned_to_varint
 
@@ -357,7 +357,7 @@ class Transaction:
             self.add_output(change_output)
         return self
 
-    def broadcast(self) -> Optional[str]:  # pragma: no cover
+    def broadcast(self) -> BroadcastResult:  # pragma: no cover
         fee_expected = math.ceil(self.fee_rate * self.byte_length())
         if self.fee() < fee_expected:
             raise InsufficientFunds(f'require {self.satoshi_total_out() + fee_expected} satoshi but only {self.satoshi_total_in()}')

@@ -4,7 +4,7 @@ from typing import Optional, List, Tuple, Union, Dict, Any
 
 from .constants import Chain, THREAD_POOL_MAX_EXECUTORS
 from .keys import PrivateKey
-from .service.provider import Provider
+from .service.provider import Provider, BroadcastResult
 from .service.service import Service
 from .transaction.transaction import Transaction, TxOutput, InsufficientFunds
 from .transaction.unspent import Unspent
@@ -123,7 +123,7 @@ class Wallet:
     def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
                          fee_rate: Optional[float] = None, unspents: Optional[List[Unspent]] = None,
                          combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None,
-                         **kwargs) -> Optional[str]:  # pragma: no cover
+                         **kwargs) -> BroadcastResult:  # pragma: no cover
         """send a transaction
         :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address

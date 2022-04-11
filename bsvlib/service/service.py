@@ -1,7 +1,7 @@
 from typing import List, Dict, Optional
 
 from .metasv import MetaSV
-from .provider import Provider
+from .provider import Provider, BroadcastResult
 from .whatsonchain import WhatsOnChain
 from ..constants import Chain, METASV_TOKEN
 
@@ -32,7 +32,7 @@ class Service:
         """
         return self.provider.get_balance(**kwargs)
 
-    def broadcast(self, raw: str) -> (bool, str):
+    def broadcast(self, raw: str) -> BroadcastResult:
         """
         :returns: (True, txid) or (False, error_message)
         """
