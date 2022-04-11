@@ -133,6 +133,7 @@ def test_transaction_bytes_io():
     assert io.read_varint() == int.from_bytes(bytes.fromhex('12345678'), 'little')
     assert io.read_varint() == int.from_bytes(bytes.fromhex('1234567890abcdef'), 'little')
 
+    assert io.read_bytes(0) == b''
     assert io.read_bytes() == bytes.fromhex('00112233')
     assert io.read_bytes() == b''
     assert io.read_bytes(1) == b''
@@ -145,6 +146,12 @@ def test_transaction_bytes_io():
 
 def test_from_hex():
     assert TxInput.from_hex('') is None
+    tx_in = TxInput.from_hex('0011' * 16 + '00112233' + '00' + '00112233')
+    assert tx_in.txid == '1100' * 16
+    assert tx_in.vout == 0x33221100
+    assert tx_in.unlocking_script == Script()
+    assert tx_in.sequence == 0x33221100
+
     assert TxOutput.from_hex('') is None
     assert Transaction.from_hex('') is None
 
