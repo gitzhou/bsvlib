@@ -34,8 +34,7 @@ def merge(wif: str, leftover: Optional[str] = None):
     print(f'send {len(unspents_groups)} transactions')
     for unspents_group in unspents_groups:
         if len(unspents_group) > MIN_CONSOLIDATION_INPUTS:
-            txid = Transaction(fee_rate=0).add_inputs(unspents_group).add_change(leftover).sign().broadcast()
-            print(txid)
+            print(Transaction(fee_rate=0).add_inputs(unspents_group).add_change(leftover).sign().broadcast())
         else:
             print(f'skip, only {len(unspents_group)} unspents')
 
