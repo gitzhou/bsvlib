@@ -53,10 +53,19 @@ class MetaSV(Provider):  # pragma: no cover
             return r.get('confirmed') + r.get('unconfirmed')
         return 0
 
-    def broadcast(self, raw: str) -> Optional[str]:
-        with suppress(Exception):
+    def broadcast(self, raw: str) -> (bool, str):
+        propagated, message = False, ''
+        try:
             data = json.dumps({'hex': raw})
-            r = requests.post(f'{self.url}/tx/broadcast', headers=self.headers, data=data, timeout=self.timeout)
-            r.raise_for_status()
-            return r.json()['txid']
-        return None
+            _r = requests.post(f'{self.url}/tx/broadcast', headers=self.headers, data=data, timeout=self.timeout)
+            _r.raise_for_status()
+
+            r = _r.json()
+            assert r, f'empty response {r}'
+            if r.get('txid'):
+                propagated, message = True, r['txid']
+            else:
+                propagated, message = False, r.get('message')
+        except Exception as e:
+            message = message or str(e)
+        return propagated, message

@@ -31,8 +31,8 @@ class Service:
         """
         return self.provider.get_balance(**kwargs)
 
-    def broadcast(self, raw: str) -> Optional[str]:
+    def broadcast(self, raw: str) -> (bool, str):
         """
-        :returns: txid if broadcast successfully otherwise None
+        :returns: (True, txid) or (False, error_message)
         """
         return self.provider.broadcast(raw)  # pragma: no cover
