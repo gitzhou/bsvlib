@@ -58,20 +58,19 @@ print(w.send_transaction(outputs=outputs, pushdatas=pushdatas, combine=True))
 
 ```python
 from bsvlib import Wallet, TxOutput, Transaction
+from bsvlib.constants import Chain
 from bsvlib.keys import Key
 from bsvlib.script import P2pkScriptType
 from bsvlib.service import SensibleQuery
 
-private_key = Key('L5agPjZKceSTkhqZF2dmFptT5LFrbr6ZGPvP7u4A6dvhTrr71WZ9')
+k = Key('cVwfreZB3i8iv9JpdSStd9PWhZZGGJCFLS4rEKWfbkahibwhticA')
+p = SensibleQuery(chain=Chain.TEST)
+unspents = Wallet(provider=p).add_keys([k, '93UnxexmsTYCmDJdctz4zacuwxQd5prDmH6rfpEyKkQViAVA3me']).get_unspents(refresh=True)
 
-w = Wallet(provider=SensibleQuery())
-w.add_key(private_key)
-w.add_key('5KiANv9EHEU4o9oLzZ6A7z4xJJ3uvfK2RLEubBtTz1fSwAbpJ2U')
-
-t = Transaction()
-t.add_inputs(w.get_unspents(refresh=True))
-t.add_output(TxOutput(P2pkScriptType.locking(private_key.public_key().serialize()), 996, P2pkScriptType()))
-t.add_change(private_key.address())
+t = Transaction(provider=p)
+t.add_inputs(unspents)
+t.add_output(TxOutput(P2pkScriptType.locking(k.public_key().serialize()), 996, P2pkScriptType()))
+t.add_change(k.address())
 
 print(t.sign().broadcast())
 ```
@@ -79,6 +78,7 @@ print(t.sign().broadcast())
 4. Operate bare-multisig
 
 ```python
+import time
 from typing import List, Union
 
 from bsvlib import Key, Unspent, Transaction, TxOutput
@@ -89,20 +89,24 @@ from bsvlib.service import WhatsOnChain
 k1 = Key('cVwfreZB3i8iv9JpdSStd9PWhZZGGJCFLS4rEKWfbkahibwhticA')
 k2 = Key('93UnxexmsTYCmDJdctz4zacuwxQd5prDmH6rfpEyKkQViAVA3me')
 provider = WhatsOnChain(Chain.TEST)
+unspents = Unspent.get_unspents(provider=provider, private_keys=[k1])
 
-t = Transaction(provider=provider)
-t.add_inputs(Unspent.get_unspents(provider=provider, private_keys=[k1]))
-# add a 2-of-3 multi-sig output
-public_keys: List[Union[str, bytes]] = [k1.public_key().hex(compressed=False), Key().public_key().hex(), k2.public_key().serialize()]
+# a 2-of-3 multi-sig output
+public_keys: List[Union[str, bytes]] = [k1.public_key().hex(), Key().public_key().hex(), k2.public_key().serialize()]
 multisig_script: Script = BareMultisigScriptType.locking(public_keys, 2)
-t.add_output(TxOutput(out=multisig_script, satoshi=1000, script_type=BareMultisigScriptType()))
-txid = t.add_change().sign().broadcast()
-print(f'create multisig - {txid}')
+output = TxOutput(out=multisig_script, satoshi=1000, script_type=BareMultisigScriptType())
+
+# create a multi-sig output
+t = Transaction(provider=provider).add_inputs(unspents).add_output(output).add_change().sign()
+r = t.broadcast()
+print(f'create multisig - {r}')
+assert r.propagated
+time.sleep(2)
 
 # send the multi-sig unspent we just created
-unspent = Unspent(txid=txid, vout=0, satoshi=1000, private_keys=[k1, k2], locking_script=multisig_script, script_type=BareMultisigScriptType())
-txid = Transaction(provider=provider).add_input(unspent).add_change(k1.address()).sign().broadcast()
-print(f'spend multisig - {txid}')
+unspent = t.to_unspent(0, private_keys=[k1, k2])
+r = Transaction(provider=provider).add_input(unspent).add_change(k1.address()).sign().broadcast()
+print(f'spend multisig - {r}')
 ```
 
 5. Sign with different SIGHASH flags, [more examples](https://github.com/gitzhou/bsvlib/tree/master/examples)
