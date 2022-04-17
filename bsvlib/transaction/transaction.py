@@ -285,13 +285,13 @@ class Transaction:
 
     def sign(self, bypass: bool = True, **kwargs) -> 'Transaction':  # pragma: no cover
         """
-        :bypass: if True then ONLY sign inputs which unlocking script is empty, otherwise sign all the inputs
+        :bypass: if True then ONLY sign inputs which unlocking script is None, otherwise sign all the inputs
         sign all inputs according to their script type
         """
         digests = self.digests()
         for i in range(len(self.tx_inputs)):
             tx_input = self.tx_inputs[i]
-            if not tx_input.unlocking_script or not bypass:
+            if tx_input.unlocking_script is None or not bypass:
                 signatures: List[bytes] = [private_key.sign(digests[i]) for private_key in tx_input.private_keys]
                 payload = {'signatures': signatures, 'private_keys': tx_input.private_keys, 'sighash': tx_input.sighash}
                 tx_input.unlocking_script = tx_input.script_type.unlocking(**payload, **{**self.kwargs, **kwargs})
@@ -323,9 +323,13 @@ class Transaction:
         """
         estimated_length = 4 + len(unsigned_to_varint(len(self.tx_inputs))) + len(unsigned_to_varint(len(self.tx_outputs))) + 4
         for tx_input in self.tx_inputs:
-            if not tx_input.private_keys:
-                raise ValueError(f"can't estimate byte length for {tx_input} without private keys")
-            estimated_length += 41 + tx_input.script_type.estimated_unlocking_byte_length(private_keys=tx_input.private_keys, **{**self.kwargs, **kwargs})
+            if tx_input.unlocking_script is not None:
+                # unlocking script already set
+                estimated_length += len(tx_input.serialize())
+            else:
+                if not tx_input.private_keys:
+                    raise ValueError(f"can't estimate byte length for {tx_input} without private keys")
+                estimated_length += 41 + tx_input.script_type.estimated_unlocking_byte_length(private_keys=tx_input.private_keys, **{**self.kwargs, **kwargs})
         for tx_output in self.tx_outputs:
             estimated_length += 8 + len(tx_output.locking_script.byte_length_varint()) + tx_output.locking_script.byte_length()
         return estimated_length
