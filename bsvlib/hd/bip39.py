@@ -37,7 +37,7 @@ class WordList:
     @classmethod
     def load_wordlist(cls, lang: str = 'en') -> List[str]:
         assert lang in WordList.files.keys(), f'{lang} wordlist not supported'
-        with open(WordList.files[lang], 'r') as f:
+        with open(WordList.files[lang], 'r', encoding='utf-8') as f:
             words: List[str] = f.read().splitlines()
         assert len(words) == WordList.LIST_WORDS_COUNT, 'broken wordlist file'
         return words
