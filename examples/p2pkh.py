@@ -9,4 +9,4 @@ print(w.get_balance(refresh=True))
 
 outputs = [('mqBuyzdHfD87VfgxaYeM9pex3sJn4ihYHY', 724), ('mr1FHq6GwWzmD1y8Jxq6rNDGsiiQ9caF7r', 996)]
 pushdatas = ['hello', b'world']
-print(w.send_transaction(outputs=outputs, pushdatas=pushdatas, combine=True))
+print(w.create_transaction(outputs=outputs, pushdatas=pushdatas, combine=True).broadcast())

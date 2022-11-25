@@ -4,7 +4,7 @@ from typing import Optional, List, Tuple, Union, Dict, Any
 
 from .constants import Chain, THREAD_POOL_MAX_EXECUTORS
 from .keys import PrivateKey
-from .service.provider import Provider, BroadcastResult
+from .service.provider import Provider
 from .service.service import Service
 from .transaction.transaction import Transaction, TxOutput, InsufficientFunds
 from .transaction.unspent import Unspent
@@ -71,15 +71,15 @@ class Wallet:
                 return sum([r for r in executor.map(get_balance_wrapper, repeat(chain), repeat(provider), args)])
         return sum([unspent.satoshi for unspent in self.unspents])
 
-    def create_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
-                           fee_rate: Optional[float] = None, unspents: Optional[List[Unspent]] = None,
+    def create_transaction(self, unspents: Optional[List[Unspent]] = None, outputs: Optional[List[Tuple]] = None,
+                           leftover: Optional[str] = None, fee_rate: Optional[float] = None,
                            combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None,
                            change: bool = True, sign: bool = True, **kwargs) -> Transaction:  # pragma: no cover
-        """create a signed transaction
+        """create a transaction
+        :param unspents: list of unspents, will refresh from service if None
         :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
         :param leftover: transaction change address
-        :param fee_rate: 0.5 satoshi per byte if None
-        :param unspents: list of unspents, will refresh from service if None
+        :param fee_rate: default fee rate if None
         :param combine: use all available unspents if True
         :param pushdatas: list of OP_RETURN pushdata
         :param change: automatically add a P2PKH change output if True
@@ -87,51 +87,44 @@ class Wallet:
         :param kwargs: passing to get unspents and create transaction
         """
         unspents: List[Unspent] = unspents or self.get_unspents(refresh=True, **{**self.kwargs, **kwargs})
-        if not unspents:
-            raise InsufficientFunds('transaction mush have at least one unspent')
+        return create_transaction(unspents, outputs, leftover, fee_rate, combine, pushdatas, change, sign, self.chain, self.provider, **{**self.kwargs, **kwargs})
 
-        t = Transaction(fee_rate=fee_rate, chain=self.chain, provider=self.provider, **{**self.kwargs, **kwargs})
-        if pushdatas:
-            t.add_output(TxOutput(pushdatas))
-        if outputs:
-            t.add_outputs([TxOutput(output[0], output[1]) for output in outputs])
-        # pick unspent
-        picked_unspents: List[Unspent] = []
-        if combine or not outputs:
-            picked_unspents = unspents
-            unspents = []
-            t.add_inputs([unspent for unspent in picked_unspents])
-        else:
-            unspent = unspents.pop()
-            picked_unspents.append(unspent)
-            t.add_input(unspent)
-            while t.fee() < t.estimated_fee() and unspents:
-                unspent = unspents.pop()
-                picked_unspents.append(unspent)
-                t.add_input(unspent)
-        if t.fee() < t.estimated_fee():
-            unspents.extend(picked_unspents)
-            raise InsufficientFunds(f'require {t.estimated_fee() + t.satoshi_total_out()} satoshi but only {t.satoshi_total_in()}')
-        else:
-            self.unspents = list(set(self.unspents) - set(picked_unspents))
-        if change:
-            t.add_change(leftover)
-        if sign:
-            t.sign()
-        return t
 
-    def send_transaction(self, outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
-                         fee_rate: Optional[float] = None, unspents: Optional[List[Unspent]] = None,
-                         combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None,
-                         **kwargs) -> BroadcastResult:  # pragma: no cover
-        """send a transaction
-        :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
-        :param leftover: transaction change address
-        :param fee_rate: 0.5 satoshi per byte if None
-        :param unspents: list of unspents, will refresh from service if None
-        :param combine: use all available unspents if True
-        :param pushdatas: list of OP_RETURN pushdata
-        :param kwargs: passing to get unspents and sign
-        :returns: txid if successfully otherwise None
-        """
-        return self.create_transaction(outputs, leftover, fee_rate, unspents, combine, pushdatas, True, True, **kwargs).broadcast()
+def create_transaction(unspents: List[Unspent], outputs: Optional[List[Tuple]] = None, leftover: Optional[str] = None,
+                       fee_rate: Optional[float] = None, combine: bool = False, pushdatas: Optional[List[Union[str, bytes]]] = None,
+                       change: bool = True, sign: bool = True, chain: Optional[Chain] = None, provider: Optional[Provider] = None,
+                       **kwargs) -> Transaction:  # pragma: no cover
+    """create a transaction
+    :param unspents: list of unspents, will refresh from service if None
+    :param outputs: list of tuple (address, satoshi). if None then sweep all the unspents to leftover
+    :param leftover: transaction change address
+    :param fee_rate: default fee rate if None
+    :param combine: use all available unspents if True
+    :param pushdatas: list of OP_RETURN pushdata
+    :param change: automatically add a P2PKH change output if True
+    :param sign: sign the transaction if True
+    :param chain: network chain
+    :param provider: service provider
+    :param kwargs: passing to get unspents and create transaction
+    """
+    if not unspents:
+        raise InsufficientFunds('transaction mush have at least one unspent')
+    t = Transaction(fee_rate=fee_rate, chain=chain, provider=provider, **kwargs)
+    if pushdatas:
+        t.add_output(TxOutput(pushdatas))
+    if outputs:
+        t.add_outputs([TxOutput(output[0], output[1]) for output in outputs])
+    # pick unspent
+    picked_unspents: List[Unspent] = []
+    while unspents and (combine or not outputs or t.fee() < t.estimated_fee()):
+        unspent = unspents.pop()
+        picked_unspents.append(unspent)
+        t.add_input(unspent)
+    if t.fee() < t.estimated_fee():
+        unspents.extend(picked_unspents)
+        raise InsufficientFunds(f'require {t.estimated_fee() + t.satoshi_total_out()} satoshi but only {t.satoshi_total_in()}')
+    if change:
+        t.add_change(leftover)
+    if sign:
+        t.sign()
+    return t
