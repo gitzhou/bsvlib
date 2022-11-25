@@ -1,3 +1,4 @@
+import math
 import re
 from base64 import b64encode, b64decode
 from contextlib import suppress
@@ -31,7 +32,7 @@ def unsigned_to_bytes(num: int, byteorder: Literal['big', 'little'] = 'big') -> 
     """
     convert an unsigned int to the least number of bytes as possible.
     """
-    return num.to_bytes((num.bit_length() + 7) // 8 or 1, byteorder)
+    return num.to_bytes(math.ceil(num.bit_length() / 8) or 1, byteorder)
 
 
 def decode_address(address: str) -> Tuple[bytes, Chain]:
@@ -268,6 +269,7 @@ def bytes_to_bits(octets: Union[str, bytes]) -> str:
 
 def bits_to_bytes(bits: str) -> bytes:
     """
-    convert binary 0/1 string to the least number of bytes
+    convert binary 0/1 string to bytes
     """
-    return unsigned_to_bytes(int(bits, 2))
+    byte_length = math.ceil(len(bits) / 8) or 1
+    return int(bits, 2).to_bytes(byte_length, byteorder='big')

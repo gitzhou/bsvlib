@@ -193,3 +193,5 @@ def test_bits():
 
     assert bits_to_bytes('101') == b'\x05'
     assert bits_to_bytes('100010101010111') == b'\x45\x57'
+    assert bits_to_bytes('000000000000001') == b'\x00\x01'
+    assert bits_to_bytes('0000000000000001') == b'\x00\x01'
