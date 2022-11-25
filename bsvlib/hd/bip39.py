@@ -4,7 +4,7 @@ from hashlib import pbkdf2_hmac
 from secrets import randbits
 from typing import List, Dict, Union
 
-from ..constants import BIP39_ENTROPY_BIT_LENGTH_LIST, BIP39_ENTROPY_DEFAULT_BIT_LENGTH
+from ..constants import BIP39_ENTROPY_BIT_LENGTH_LIST, BIP39_ENTROPY_BIT_LENGTH
 from ..hash import sha256
 from ..utils import bytes_to_bits, bits_to_bytes
 
@@ -66,7 +66,7 @@ def mnemonic_from_entropy(entropy: Union[bytes, str, None] = None, lang: str = '
         entropy_bytes = entropy if isinstance(entropy, bytes) else bytes.fromhex(entropy)
     else:
         # random a new entropy
-        entropy_bytes = randbits(BIP39_ENTROPY_DEFAULT_BIT_LENGTH).to_bytes(BIP39_ENTROPY_DEFAULT_BIT_LENGTH // 8, 'big')
+        entropy_bytes = randbits(BIP39_ENTROPY_BIT_LENGTH).to_bytes(BIP39_ENTROPY_BIT_LENGTH // 8, 'big')
     entropy_bits: str = bytes_to_bits(entropy_bytes)
     assert len(entropy_bits) in BIP39_ENTROPY_BIT_LENGTH_LIST, 'invalid entropy bit length'
     checksum_bits: str = bytes_to_bits(sha256(entropy_bytes))[:len(entropy_bits) // 32]

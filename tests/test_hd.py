@@ -137,24 +137,24 @@ def test_mnemonic():
 def test_derive():
     mnemonic = 'chief december immune nominee forest scheme slight tornado cupboard post summer program'
 
-    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 2, 0)] == []
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 2, 0, path="m/44'/0'/0'")] == []
 
-    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2)] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, path="m/44'/0'/0'")] == [
         'KwW635XeepCG6SzpSMugJ2XDckdnoP6DsDSvg1kjLt11tEJyYaSH',
         'L1QcQMMtXar4nb9hkWdmawumopgKZfRi4Ge1T143w3mBWw7QmuU1',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, "1'", "3'")] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, "1'", "3'", path="m/44'/0'/0'")] == [
         'L3hELjh4wmLgrWEqK2mLsMW3WL3BiYYN3e7wP4s8Xtqi9M8sfNwq',
         'L2orKKStKu1zB2gUzwvEosy8nzohBKBYHZpPThHJ9a6imJs687RA',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, change=1)] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, change=1, path="m/44'/0'/0'")] == [
         'L4ihevFGHEu3Hdk8TDCucLkyrDSntxhiEnjp2SQARPEnmHXsMG2L',
         'KzRrUofZDgfArmmhqtuS7EMvTUmvWT7BGpqJdCJzmBiwWixatiEk',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, change="0'")] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, change="0'", path="m/44'/0'/0'")] == [
         'L4gRZpDf5Nm6JrowpcX9Z8zmxKNNgiWE61uBb4xF2i8Y9DjXiK5u',
         'KwxW8VrNkoxjjyH22cMPv6ZbBKZKTcV6iSqjTP73daih4fyg3znY',
     ]
@@ -164,14 +164,14 @@ def test_derive():
         'KzwYj8kMuNqmxLModB1nyPoZjPskCqPXJHf6oUdpHkBK6ZgDUoHE',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, passphrase='bitcoin')] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, passphrase='bitcoin', path="m/44'/0'/0'")] == [
         'L3BWttJh9azQPvvYwFHeEyPniDTCA9TSaPqHKA7jadLVUHDg8KKC',
         'L3h1AvgvscQ1twBTgrH522yNtBfvPjSue3zfH5YRQCt6PdV7FdwS',
     ]
 
     mnemonic = '安 效 架 碱 皮 伐 鸭 膨 何 泰 陕 森'
 
-    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, lang='zh-cn')] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, lang='zh-cn', path="m/44'/0'/0'")] == [
         'KxmA3w8DSR37eD5RqqgkrHHjLgWkZbhyotDd3EehXjvKKziucpwd',
         'L4Q21pxZZpMHWnH19FypFmQhkkxgj1ZSMeCbSfdELu5HnZZm1yJk',
     ]

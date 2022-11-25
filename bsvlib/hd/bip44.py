@@ -2,11 +2,11 @@ from typing import Union, List
 
 from .bip32 import Xprv, Xpub, step_to_index, ckd
 from .bip39 import seed_from_mnemonic
-from ..constants import Chain
+from ..constants import Chain, BIP44_DERIVATION_PATH
 
 
 def derive_xprv_from_mnemonic(mnemonic: str, lang: str = 'en', passphrase: str = '', prefix: str = 'mnemonic',
-                              path: str = "m/44'/0'/0'", chain: Chain = Chain.MAIN) -> Xprv:
+                              path: str = BIP44_DERIVATION_PATH, chain: Chain = Chain.MAIN) -> Xprv:
     """
     derive the subtree root extended private key from mnemonic and path
     """
@@ -25,7 +25,7 @@ def derive_xkeys_from_xkey(xkey: Union[Xprv, Xpub], index_start: Union[str, int]
 
 
 def derive_xprvs_from_mnemonic(mnemonic: str, index_start: Union[str, int], index_end: Union[str, int], lang: str = 'en',
-                               passphrase: str = '', prefix: str = 'mnemonic', path: str = "m/44'/0'/0'",
+                               passphrase: str = '', prefix: str = 'mnemonic', path: str = BIP44_DERIVATION_PATH,
                                change: Union[str, int] = 0, chain: Chain = Chain.MAIN) -> List[Xprv]:
     xprv = derive_xprv_from_mnemonic(mnemonic, lang, passphrase, prefix, path, chain)
     return derive_xkeys_from_xkey(xprv, index_start, index_end, change)
