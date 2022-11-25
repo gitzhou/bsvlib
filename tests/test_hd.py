@@ -2,7 +2,7 @@ import pytest
 
 from bsvlib.hd.bip32 import Xpub, Xprv, ckd, master_xprv_from_seed
 from bsvlib.hd.bip39 import WordList, mnemonic_from_entropy, seed_from_mnemonic, validate_mnemonic
-from bsvlib.hd.bip44 import derive_from_mnemonic, derive_from_xkey
+from bsvlib.hd.bip44 import derive_xprvs_from_mnemonic, derive_xkeys_from_xkey
 
 _mnemonic = 'slice simple ring fluid capital exhaust will illegal march annual shift hood'
 _seed = '4fc3bea5ae2df6c5a93602e87085de5a7c1e94bb7ab5e6122364753cc51aa5e210c32aec1c58ed570c83084ec3b60b4ad69075bc62c05edb8e538ae2843f4f59'
@@ -137,48 +137,48 @@ def test_mnemonic():
 def test_derive():
     mnemonic = 'chief december immune nominee forest scheme slight tornado cupboard post summer program'
 
-    assert [xprv.private_key().wif() for xprv in derive_from_mnemonic(mnemonic, 2, 0)] == []
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 2, 0)] == []
 
-    assert [xprv.private_key().wif() for xprv in derive_from_mnemonic(mnemonic, 0, 2)] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2)] == [
         'KwW635XeepCG6SzpSMugJ2XDckdnoP6DsDSvg1kjLt11tEJyYaSH',
         'L1QcQMMtXar4nb9hkWdmawumopgKZfRi4Ge1T143w3mBWw7QmuU1',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_from_mnemonic(mnemonic, "1'", "3'")] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, "1'", "3'")] == [
         'L3hELjh4wmLgrWEqK2mLsMW3WL3BiYYN3e7wP4s8Xtqi9M8sfNwq',
         'L2orKKStKu1zB2gUzwvEosy8nzohBKBYHZpPThHJ9a6imJs687RA',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_from_mnemonic(mnemonic, 0, 2, change=1)] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, change=1)] == [
         'L4ihevFGHEu3Hdk8TDCucLkyrDSntxhiEnjp2SQARPEnmHXsMG2L',
         'KzRrUofZDgfArmmhqtuS7EMvTUmvWT7BGpqJdCJzmBiwWixatiEk',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_from_mnemonic(mnemonic, 0, 2, change="0'")] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, change="0'")] == [
         'L4gRZpDf5Nm6JrowpcX9Z8zmxKNNgiWE61uBb4xF2i8Y9DjXiK5u',
         'KwxW8VrNkoxjjyH22cMPv6ZbBKZKTcV6iSqjTP73daih4fyg3znY',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_from_mnemonic(mnemonic, 0, 2, path="m/44'/236'/0'")] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, path="m/44'/236'/0'")] == [
         'L4toENSefoBpDJcfGAwrSMcyqBNmfSYjgkAP2qeNujw5oPQGvNtM',
         'KzwYj8kMuNqmxLModB1nyPoZjPskCqPXJHf6oUdpHkBK6ZgDUoHE',
     ]
 
-    assert [xprv.private_key().wif() for xprv in derive_from_mnemonic(mnemonic, 0, 2, passphrase='bitcoin')] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, passphrase='bitcoin')] == [
         'L3BWttJh9azQPvvYwFHeEyPniDTCA9TSaPqHKA7jadLVUHDg8KKC',
         'L3h1AvgvscQ1twBTgrH522yNtBfvPjSue3zfH5YRQCt6PdV7FdwS',
     ]
 
     mnemonic = '安 效 架 碱 皮 伐 鸭 膨 何 泰 陕 森'
 
-    assert [xprv.private_key().wif() for xprv in derive_from_mnemonic(mnemonic, 0, 2, lang='zh-cn')] == [
+    assert [xprv.private_key().wif() for xprv in derive_xprvs_from_mnemonic(mnemonic, 0, 2, lang='zh-cn')] == [
         'KxmA3w8DSR37eD5RqqgkrHHjLgWkZbhyotDd3EehXjvKKziucpwd',
         'L4Q21pxZZpMHWnH19FypFmQhkkxgj1ZSMeCbSfdELu5HnZZm1yJk',
     ]
 
     xpub = Xpub('xpub6Cz7kFTJ71HQPZpSb8SF2naobZ6HnLgZ8izFEJ31A5R4aR4c3sgHGP8KFwSJbUKLuBeNM4CdXHdrWTqC4sViEHTdv9mXAdCy2E3e6kjUWfB')
 
-    assert [xpub.address() for xpub in derive_from_xkey(xpub, 0, 1)] == ['1NDA9czdzkaJFA5Cj1TRyKeews5GrJ9QKR']
+    assert [xpub.address() for xpub in derive_xkeys_from_xkey(xpub, 0, 1)] == ['1NDA9czdzkaJFA5Cj1TRyKeews5GrJ9QKR']
 
     with pytest.raises(AssertionError, match=r"can't make hardened derivation from xpub"):
-        derive_from_xkey(xpub, "0'", "1'")
+        derive_xkeys_from_xkey(xpub, "0'", "1'")
