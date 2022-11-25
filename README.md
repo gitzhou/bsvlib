@@ -34,7 +34,8 @@ $ pip install bsvlib
 from bsvlib import Wallet
 
 # Donate to aaron67!
-print(Wallet(['YOUR_WIF']).create_transaction(outputs=[('1HYeFCE2KG4CW4Jwz5NmDqAZK9Q626ChmN', 724996)]).broadcast())
+outputs = [('1HYeFCE2KG4CW4Jwz5NmDqAZK9Q626ChmN', 724996)]
+print(Wallet(['YOUR_WIF']).create_transaction(outputs=outputs).broadcast())
 ```
 
 2. Send unspent locked by different keys in one transaction, support OP_RETURN output as well
@@ -65,17 +66,18 @@ from bsvlib.keys import Key
 from bsvlib.script import P2pkScriptType
 
 chain = Chain.TEST
-k = Key('cVwfreZB3i8iv9JpdSStd9PWhZZGGJCFLS4rEKWfbkahibwhticA')
-unspents = Wallet(chain=chain).add_keys([k, '93UnxexmsTYCmDJdctz4zacuwxQd5prDmH6rfpEyKkQViAVA3me']).get_unspents(refresh=True)
 
-t = Transaction(chain=chain).add_inputs(unspents)
-t.add_output(TxOutput(P2pkScriptType.locking(k.public_key().serialize()), 996, P2pkScriptType()))
-t.add_change(k.address()).sign()
-print(t.broadcast())
+k = Key('cVwfreZB3i8iv9JpdSStd9PWhZZGGJCFLS4rEKWfbkahibwhticA')
+p2pk_output = TxOutput(P2pkScriptType.locking(k.public_key().serialize()), 996, P2pkScriptType())
+
+unspents = Wallet(chain=chain).add_keys([k, '93UnxexmsTYCmDJdctz4zacuwxQd5prDmH6rfpEyKkQViAVA3me']).get_unspents(refresh=True)
+t = Transaction(chain=chain).add_inputs(unspents).add_output(p2pk_output).add_change(k.address()).sign()
+print('create p2pk:', t.broadcast())
 
 time.sleep(2)
-tt = Transaction(chain=chain).add_inputs(t.to_unspents(args=[{'private_keys': [k]}] * 2)).add_change(k.address()).sign()
-print(tt.broadcast())
+unspents = t.to_unspents(args=[{'private_keys': [k]}] * 2)
+t = Transaction(chain=chain).add_inputs(unspents).add_change(k.address()).sign()
+print('sepnd p2pk:', t.broadcast())
 ```
 
 4. Operate bare-multisig
