@@ -107,12 +107,9 @@ class TxInput:
 
 class TxOutput:
 
-    def __init__(self, out: Union[str, List[Union[str, bytes]], Script, None] = None, satoshi: int = 0, script_type: ScriptType = UnknownScriptType()):
+    def __init__(self, out: Union[str, List[Union[str, bytes]], Script], satoshi: int = 0, script_type: ScriptType = UnknownScriptType()):
         self.satoshi = satoshi
-        if out is None:
-            self.locking_script: Script = Script()
-            self.script_type: ScriptType = UnknownScriptType()
-        elif isinstance(out, str):
+        if isinstance(out, str):
             # from address
             self.locking_script: Script = P2pkhScriptType.locking(out)
             self.script_type: ScriptType = P2pkhScriptType()

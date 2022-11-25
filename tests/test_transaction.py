@@ -49,7 +49,6 @@ digest3 = bytes.fromhex(
 
 
 def test_output():
-    assert TxOutput().locking_script == Script()
     assert TxOutput(['123', '456']).locking_script == Script('006a' + '03313233' + '03343536')
 
     with pytest.raises(TypeError, match=r'unsupported transaction output type'):
