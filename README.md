@@ -12,7 +12,7 @@ A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
 - P2PKH, P2PK, and bare-multisig supported
 - All the SIGHASH flags supported
 - Additional script types can be customized
-- [MetaSV](https://metasv.com/), [SensibleQuery](https://api.sensiblequery.com/swagger/index.html), and [WhatsOnChain](https://developers.whatsonchain.com/) API integrated
+- [MetaSV](https://metasv.com/) and [WhatsOnChain](https://developers.whatsonchain.com/) API integrated
 - Ability to adapt to different service providers
 - Fully ECDSA implementation
 - ECDH and Electrum ECIES (aka BIE1) implementation
@@ -34,7 +34,7 @@ $ pip install bsvlib
 from bsvlib import Wallet
 
 # Donate to aaron67!
-print(Wallet(['YOUR_WIF_GOES_HERE']).send_transaction(outputs=[('1HYeFCE2KG4CW4Jwz5NmDqAZK9Q626ChmN', 724996)]))
+print(Wallet(['YOUR_WIF']).create_transaction(outputs=[('1HYeFCE2KG4CW4Jwz5NmDqAZK9Q626ChmN', 724996)]).broadcast())
 ```
 
 2. Send unspent locked by different keys in one transaction, support OP_RETURN output as well
@@ -51,28 +51,31 @@ print(w.get_balance(refresh=True))
 
 outputs = [('mqBuyzdHfD87VfgxaYeM9pex3sJn4ihYHY', 724), ('mr1FHq6GwWzmD1y8Jxq6rNDGsiiQ9caF7r', 996)]
 pushdatas = ['hello', b'world']
-print(w.send_transaction(outputs=outputs, pushdatas=pushdatas, combine=True))
+print(w.create_transaction(outputs=outputs, pushdatas=pushdatas, combine=True).broadcast())
 ```
 
 3. Operate P2PK
 
 ```python
+import time
+
 from bsvlib import Wallet, TxOutput, Transaction
 from bsvlib.constants import Chain
 from bsvlib.keys import Key
 from bsvlib.script import P2pkScriptType
-from bsvlib.service import SensibleQuery
 
+chain = Chain.TEST
 k = Key('cVwfreZB3i8iv9JpdSStd9PWhZZGGJCFLS4rEKWfbkahibwhticA')
-p = SensibleQuery(chain=Chain.TEST)
-unspents = Wallet(provider=p).add_keys([k, '93UnxexmsTYCmDJdctz4zacuwxQd5prDmH6rfpEyKkQViAVA3me']).get_unspents(refresh=True)
+unspents = Wallet(chain=chain).add_keys([k, '93UnxexmsTYCmDJdctz4zacuwxQd5prDmH6rfpEyKkQViAVA3me']).get_unspents(refresh=True)
 
-t = Transaction(provider=p)
-t.add_inputs(unspents)
+t = Transaction(chain=chain).add_inputs(unspents)
 t.add_output(TxOutput(P2pkScriptType.locking(k.public_key().serialize()), 996, P2pkScriptType()))
-t.add_change(k.address())
+t.add_change(k.address()).sign()
+print(t.broadcast())
 
-print(t.sign().broadcast())
+time.sleep(2)
+tt = Transaction(chain=chain).add_inputs(t.to_unspents(args=[{'private_keys': [k]}] * 2)).add_change(k.address()).sign()
+print(tt.broadcast())
 ```
 
 4. Operate bare-multisig
@@ -172,7 +175,7 @@ print(private_key.decrypt_text(encrypted))
 ```python
 from typing import List
 
-from bsvlib.hd import mnemonic_from_entropy, Xprv, derive_from_mnemonic
+from bsvlib.hd import mnemonic_from_entropy, Xprv, derive_xprvs_from_mnemonic
 
 #
 # HD derivation
@@ -183,7 +186,7 @@ entropy = 'cd9b819d9c62f0027116c1849e7d497f'
 mnemonic: str = mnemonic_from_entropy(entropy)
 print(mnemonic)
 
-keys: List[Xprv] = derive_from_mnemonic(mnemonic, path="m/44'/0'/0'", change=1, index_start=0, index_end=5)
+keys: List[Xprv] = derive_xprvs_from_mnemonic(mnemonic, path="m/44'/0'/0'", change=1, index_start=0, index_end=5)
 for key in keys:
     print(key.address(), key.private_key().wif())
 
