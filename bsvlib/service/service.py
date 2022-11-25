@@ -9,9 +9,11 @@ from ..constants import Chain, METASV_TOKEN
 class Service:
 
     def __init__(self, chain: Optional[Chain] = None, provider: Optional[Provider] = None):
-        chain = chain or Chain.MAIN
-        default_provider = MetaSV(token=METASV_TOKEN) if chain == Chain.MAIN and METASV_TOKEN else WhatsOnChain(chain)
-        self.provider = provider or default_provider
+        if provider:
+            self.provider = provider
+        else:
+            chain = chain or Chain.MAIN
+            self.provider = MetaSV(token=METASV_TOKEN) if chain == Chain.MAIN and METASV_TOKEN else WhatsOnChain(chain)
         self.chain = self.provider.chain
 
     def get_unspents(self, **kwargs) -> List[Dict]:
