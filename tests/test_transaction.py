@@ -263,3 +263,4 @@ def test_estimated_byte_length():
 
     _in.unlocking_script = b''
     assert t.estimated_byte_length() == 85
+    assert t.estimated_byte_length() == t.byte_length()

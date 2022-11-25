@@ -323,6 +323,7 @@ class Transaction:
     def estimated_byte_length(self, **kwargs) -> int:
         """
         :returns: estimated byte length of this transaction after signing
+        if transaction has already signed, it will return the same value as function byte_length
         """
         estimated_length = 4 + len(unsigned_to_varint(len(self.tx_inputs))) + len(unsigned_to_varint(len(self.tx_outputs))) + 4
         for tx_input in self.tx_inputs:
@@ -364,9 +365,9 @@ class Transaction:
             self.add_output(change_output)
         return self
 
-    def broadcast(self) -> BroadcastResult:  # pragma: no cover
-        fee_expected = math.ceil(self.fee_rate * self.byte_length())
-        if self.fee() < fee_expected:
+    def broadcast(self, check_fee: bool = True) -> BroadcastResult:  # pragma: no cover
+        fee_expected = self.estimated_fee()
+        if check_fee and self.fee() < fee_expected:
             raise InsufficientFunds(f'require {self.satoshi_total_out() + fee_expected} satoshi but only {self.satoshi_total_in()}')
         return Service(self.chain, self.provider).broadcast(self.hex())
 
