@@ -127,6 +127,9 @@ class PublicKey:
     def __str__(self) -> str:  # pragma: no cover
         return f'<PublicKey hex={self.hex()}>'
 
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
+
 
 class PrivateKey:
 
@@ -277,6 +280,9 @@ class PrivateKey:
 
     def __str__(self) -> str:  # pragma: no cover
         return f'<PrivateKey wif={self.wif()} int={self.int()}>'
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
 
     @classmethod
     def from_hex(cls, octets: Union[str, bytes]) -> 'PrivateKey':

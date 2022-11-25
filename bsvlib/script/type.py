@@ -47,6 +47,9 @@ class UnknownScriptType(ScriptType):  # pragma: no cover
     def __str__(self) -> str:
         return '<ScriptType:Unknown>'
 
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
+
     @classmethod
     def unlocking(cls, **kwargs) -> Script:
         raise ValueError("don't know how to unlock for script of unknown type")
@@ -60,6 +63,9 @@ class P2pkhScriptType(ScriptType):
 
     def __str__(self) -> str:  # pragma: no cover
         return '<ScriptType:P2PKH>'
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
 
     @classmethod
     def locking(cls, value: Union[str, bytes]) -> Script:
@@ -92,6 +98,9 @@ class OpReturnScriptType(ScriptType):
     def __str__(self) -> str:  # pragma: no cover
         return '<ScriptType:OP_RETURN>'
 
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
+
     @classmethod
     def locking(cls, pushdatas: List[Union[str, bytes]]) -> Script:
         script: bytes = OP.OP_FALSE + OP.OP_RETURN
@@ -118,6 +127,9 @@ class P2pkScriptType(ScriptType):
 
     def __str__(self) -> str:  # pragma: no cover
         return '<ScriptType:P2PK>'
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
 
     @classmethod
     def locking(cls, public_key: Union[str, bytes]) -> Script:
@@ -148,6 +160,9 @@ class BareMultisigScriptType(ScriptType):
 
     def __str__(self) -> str:  # pragma: no cover
         return '<ScriptType:BareMultisig>'
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
 
     @classmethod
     def locking(cls, participants: List[Union[str, bytes]], threshold: int) -> Script:

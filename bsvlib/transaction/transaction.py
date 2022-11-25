@@ -85,6 +85,9 @@ class TxInput:
     def __str__(self) -> str:  # pragma: no cover
         return f'<TxInput outpoint={self.txid}:{self.vout} satoshi={self.satoshi} locking_script={self.locking_script}>'
 
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
+
     @classmethod
     def from_hex(cls, stream: Union[str, bytes, TransactionBytesIO]) -> Optional['TxInput']:
         with suppress(Exception):
@@ -129,6 +132,9 @@ class TxOutput:
 
     def __str__(self) -> str:  # pragma: no cover
         return f'<TxOutput satoshi={self.satoshi} locking_script={self.locking_script.hex()}>'
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
 
     @classmethod
     def from_hex(cls, stream: Union[str, bytes, TransactionBytesIO]) -> Optional['TxOutput']:

@@ -43,3 +43,6 @@ class Script:
 
     def __str__(self) -> str:  # pragma: no cover
         return self.script.hex()
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()

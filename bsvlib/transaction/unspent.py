@@ -35,6 +35,9 @@ class Unspent:
     def __str__(self) -> str:  # pragma: no cover
         return f'<Unspent outpoint={self.txid}:{self.vout} satoshi={self.satoshi} script={self.locking_script}>'
 
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
+
     def __eq__(self, o: object) -> bool:  # pragma: no cover
         if isinstance(o, Unspent):
             return self.txid == o.txid and self.vout == o.vout

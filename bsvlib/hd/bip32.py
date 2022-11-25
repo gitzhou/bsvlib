@@ -45,6 +45,9 @@ class Xkey:
     def __str__(self) -> str:
         return base58check_encode(self.payload)
 
+    def __repr__(self) -> str:  # pragma: no cover
+        return self.__str__()
+
 
 class Xpub(Xkey):
 
