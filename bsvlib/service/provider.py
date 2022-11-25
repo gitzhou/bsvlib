@@ -30,7 +30,12 @@ class Provider(metaclass=ABCMeta):
         """
         HTTP GET wrapper
         """
-        r = requests.get(kwargs['url'], headers=self.headers, params=kwargs.get('params'), timeout=self.timeout)
+        r = requests.get(
+            kwargs['url'],
+            headers=kwargs.get('headers') or self.headers,
+            params=kwargs.get('params'),
+            timeout=kwargs.get('timeout') or self.timeout
+        )
         r.raise_for_status()
         return r.json()
 

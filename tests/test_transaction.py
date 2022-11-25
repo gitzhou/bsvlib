@@ -5,7 +5,7 @@ from bsvlib.hash import hash256
 from bsvlib.keys import Key
 from bsvlib.script.script import Script
 from bsvlib.script.type import P2pkhScriptType, P2pkScriptType
-from bsvlib.service import WhatsOnChain, SensibleQuery
+from bsvlib.service import WhatsOnChain
 from bsvlib.transaction.transaction import TxInput, TxOutput, Transaction, TransactionBytesIO
 from bsvlib.transaction.unspent import Unspent
 from bsvlib.utils import encode_pushdata
@@ -192,7 +192,6 @@ def test_parse_outputs():
     out2 = TxOutput(P2pkScriptType.locking(k.public_key().serialize()), 1000, P2pkScriptType())
 
     t.add_outputs([out0, out1, out2]).sign()
-    _unspent0 = None
     _unspent1 = Unspent(txid=t.txid(), vout=1, satoshi=1000)
     _unspent2 = Unspent(txid=t.txid(), vout=2, satoshi=1000)
 
@@ -239,11 +238,6 @@ def test_chain_provider():
     assert t.chain == Chain.MAIN
     assert isinstance(t.provider, WhatsOnChain)
     assert t.provider.chain == Chain.MAIN
-
-    t = Transaction(provider=SensibleQuery(Chain.TEST))
-    assert t.chain == Chain.TEST
-    assert isinstance(t.provider, SensibleQuery)
-    assert t.provider.chain == Chain.TEST
 
 
 def test_estimated_byte_length():

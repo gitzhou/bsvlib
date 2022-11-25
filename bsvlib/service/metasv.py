@@ -27,10 +27,7 @@ class MetaSV(Provider):  # pragma: no cover
         return []
 
     def get_unspents(self, **kwargs) -> List[Dict]:
-        """
-        only P2PKH unspents
-        """
-        with suppress(Exception):
+        try:
             address, _, _ = self.parse_kwargs(**kwargs)
             # paging
             paged_unspents: List[Dict] = self._get_unspents(address)
@@ -45,13 +42,19 @@ class MetaSV(Provider):  # pragma: no cover
                 unspent.update(kwargs)
                 unspents.append(unspent)
             return unspents
+        except Exception as e:
+            if kwargs.get('throw'):
+                raise e
         return []
 
     def get_balance(self, **kwargs) -> int:
-        with suppress(Exception):
+        try:
             address, _, _ = self.parse_kwargs(**kwargs)
             r: Dict = self.get(url=f'{self.url}/address/{address}/balance')
             return r.get('confirmed') + r.get('unconfirmed')
+        except Exception as e:
+            if kwargs.get('throw'):
+                raise e
         return 0
 
     def broadcast(self, raw: str) -> BroadcastResult:
@@ -60,7 +63,6 @@ class MetaSV(Provider):  # pragma: no cover
             data = json.dumps({'hex': raw})
             _r = requests.post(f'{self.url}/tx/broadcast', headers=self.headers, data=data, timeout=self.timeout)
             _r.raise_for_status()
-
             r = _r.json()
             assert r, f'empty response {r}'
             if r.get('txid'):
