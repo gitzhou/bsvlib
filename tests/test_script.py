@@ -27,7 +27,7 @@ def test_p2pkh():
     assert P2pkhScriptType.locking(address) == Script(locking_script)
     assert P2pkhScriptType.locking(address_to_public_key_hash(address)) == Script(locking_script)
 
-    with pytest.raises(TypeError, match=r"can't parse P2PKH locking script"):
+    with pytest.raises(TypeError, match=r"unsupported type to parse P2PKH locking script"):
         # noinspection PyTypeChecker
         P2pkhScriptType.locking(1)
 
@@ -47,7 +47,7 @@ def test_op_return():
     assert OpReturnScriptType.locking(['0' * 0x0100]) == Script('006a' + '4d0001' + '30' * 0x0100)
     assert OpReturnScriptType.locking([b'\x31\x32', '345']) == Script('006a' + '023132' + '03333435')
 
-    with pytest.raises(TypeError, match=r"can't parse OP_RETURN locking script"):
+    with pytest.raises(TypeError, match=r"unsupported type to parse OP_RETURN locking script"):
         # noinspection PyTypeChecker
         OpReturnScriptType.locking([1])
 
@@ -56,7 +56,7 @@ def test_p2pk():
     public_key = Key('L5agPjZKceSTkhqZF2dmFptT5LFrbr6ZGPvP7u4A6dvhTrr71WZ9').public_key()
     assert P2pkScriptType.locking(public_key.hex()) == P2pkScriptType.locking(public_key.serialize())
 
-    with pytest.raises(TypeError, match=r"can't parse P2PK locking script"):
+    with pytest.raises(TypeError, match=r"unsupported type to parse P2PK locking script"):
         # noinspection PyTypeChecker
         P2pkScriptType.locking(1)
 

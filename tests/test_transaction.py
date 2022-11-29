@@ -249,7 +249,7 @@ def test_estimated_byte_length():
 
     t = Transaction().add_input(_in).add_output(_out)
 
-    with pytest.raises(ValueError, match=r"can't estimate byte length"):
+    with pytest.raises(ValueError, match=r"can't estimate unlocking byte length"):
         t.estimated_byte_length()
 
     _in.private_keys = [Key()]

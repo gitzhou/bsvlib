@@ -77,7 +77,7 @@ class P2pkhScriptType(ScriptType):
         elif isinstance(value, bytes):
             pkh: bytes = value
         else:
-            raise TypeError("can't parse P2PKH locking script")
+            raise TypeError("unsupported type to parse P2PKH locking script")
         assert len(pkh) == PUBLIC_KEY_HASH_BYTE_LENGTH, 'invalid byte length of public key hash'
         return Script(OP.OP_DUP + OP.OP_HASH160 + encode_pushdata(pkh) + OP.OP_EQUALVERIFY + OP.OP_CHECKSIG)
 
@@ -90,6 +90,8 @@ class P2pkhScriptType(ScriptType):
 
     @classmethod
     def estimated_unlocking_byte_length(cls, **kwargs) -> int:
+        if not kwargs.get('private_keys'):
+            raise ValueError(f"can't estimate unlocking byte length without private keys")
         return 107 if kwargs.get('private_keys')[0].compressed else 139
 
 
@@ -110,7 +112,7 @@ class OpReturnScriptType(ScriptType):
             elif isinstance(pushdata, bytes):
                 pushdata_bytes: bytes = pushdata
             else:
-                raise TypeError("can't parse OP_RETURN locking script")
+                raise TypeError("unsupported type to parse OP_RETURN locking script")
             script += encode_pushdata(pushdata_bytes, minimal_push=False)
         return Script(script)
 
@@ -141,7 +143,7 @@ class P2pkScriptType(ScriptType):
         elif isinstance(public_key, bytes):
             pk: bytes = public_key
         else:
-            raise TypeError("can't parse P2PK locking script")
+            raise TypeError("unsupported type to parse P2PK locking script")
         assert len(pk) in PUBLIC_KEY_BYTE_LENGTH_LIST, 'invalid byte length of public key'
         return Script(encode_pushdata(pk) + OP.OP_CHECKSIG)
 
@@ -187,4 +189,6 @@ class BareMultisigScriptType(ScriptType):
 
     @classmethod
     def estimated_unlocking_byte_length(cls, **kwargs) -> int:  # pragma: no cover
+        if not kwargs.get('private_keys'):
+            raise ValueError(f"can't estimate unlocking byte length without private keys")
         return 1 + 73 * len(kwargs.get('private_keys'))
