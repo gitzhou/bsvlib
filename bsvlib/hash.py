@@ -1,5 +1,7 @@
 import hashlib
 
+from Cryptodome.Hash import RIPEMD160
+
 
 def sha256(payload: bytes) -> bytes:
     return hashlib.sha256(payload).digest()
@@ -10,7 +12,7 @@ def double_sha256(payload: bytes) -> bytes:
 
 
 def ripemd160_sha256(payload: bytes) -> bytes:
-    return hashlib.new('ripemd160', sha256(payload)).digest()
+    return RIPEMD160.new(sha256(payload)).digest()
 
 
 hash256 = double_sha256
