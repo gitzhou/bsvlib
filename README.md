@@ -12,7 +12,7 @@ A Bitcoin SV (BSV) Python Library that is extremely simple to use but more.
 - P2PKH, P2PK, and bare-multisig supported
 - All the SIGHASH flags supported
 - Additional script types can be customized
-- [MetaSV](https://metasv.com/) and [WhatsOnChain](https://developers.whatsonchain.com/) API integrated
+- [WhatsOnChain](https://developers.whatsonchain.com/) API integrated
 - Ability to adapt to different service providers
 - Fully ECDSA implementation
 - ECDH and Electrum ECIES (aka BIE1) implementation

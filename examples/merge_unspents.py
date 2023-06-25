@@ -3,7 +3,6 @@ from typing import Optional
 import requests
 
 from bsvlib import Transaction, Key, Unspent
-from bsvlib.service import MetaSV
 
 MIN_CONSOLIDATION_INPUTS = 100
 MERGE_COUNT = 3000
@@ -13,11 +12,11 @@ LEFTOVER = ''  # if None or empty, then merge into the address corresponding to 
 
 
 def get_block_height() -> int:
-    return requests.get('https://apiv2.metasv.com/block/info').json()['blocks']
+    return requests.get('https://api.whatsonchain.com/v1/bsv/main/chain/info').json()['blocks']
 
 
 def pick_confirmed(wif):
-    unspents = Unspent.get_unspents(provider=MetaSV(), private_keys=[Key(wif)])
+    unspents = Unspent.get_unspents(private_keys=[Key(wif)])
     print(f'total {len(unspents)}')
     current_height = get_block_height()
     picked = []

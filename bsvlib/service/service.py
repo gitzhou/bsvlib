@@ -1,9 +1,8 @@
 from typing import List, Dict, Optional
 
-from .metasv import MetaSV
 from .provider import Provider, BroadcastResult
 from .whatsonchain import WhatsOnChain
-from ..constants import Chain, METASV_TOKEN
+from ..constants import Chain
 
 
 class Service:
@@ -13,7 +12,7 @@ class Service:
             self.provider = provider
         else:
             chain = chain or Chain.MAIN
-            self.provider = MetaSV(token=METASV_TOKEN) if chain == Chain.MAIN and METASV_TOKEN else WhatsOnChain(chain)
+            self.provider = WhatsOnChain(chain)
         self.chain = self.provider.chain
 
     def get_unspents(self, **kwargs) -> List[Dict]:

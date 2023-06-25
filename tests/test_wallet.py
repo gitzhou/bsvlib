@@ -1,6 +1,5 @@
 from bsvlib.constants import Chain
 from bsvlib.keys import Key
-from bsvlib.script.type import P2pkScriptType
 from bsvlib.service.whatsonchain import WhatsOnChain
 from bsvlib.wallet import Wallet
 
@@ -45,12 +44,4 @@ def test():
     w2.get_unspents(refresh=True)
     assert w2.get_balance() == w2.get_balance(refresh=True)
 
-    has_p2pk = False
-    for unspent in w2.get_unspents():
-        if unspent.script_type == P2pkScriptType():
-            has_p2pk = True
-            break
-    if has_p2pk:
-        assert w1.get_balance() < w2.get_balance()
-    else:
-        assert w1.get_balance() == w2.get_balance()
+    assert w1.get_balance() == w2.get_balance()
